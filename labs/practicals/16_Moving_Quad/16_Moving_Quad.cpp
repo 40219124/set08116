@@ -51,6 +51,12 @@ bool update(float delta_time) {
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_RIGHT)) {
 		pos += vec3(10.0f, 0.0f, 0.0f) * delta_time;
 	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_SPACE)) {
+		pos += vec3(0.0f, 5.0f, 0.0f) * delta_time;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT_SHIFT)) {
+		pos += vec3(0.0f, -5.0f, -0.0f) * delta_time;
+	}
 	// Update the camera
 	cam.update(delta_time);
 	return true;
