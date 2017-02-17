@@ -49,7 +49,7 @@ bool load_content() {
   // ******************************
   texs[0] = texture("textures/checker.png", false, false);
   texs[1] = texture("textures/checker.png", false, true);
-  texs[2] = texture("textures/checker.png", true, true);
+  texs[2] = texture("textures/checker.png", true, false);
   texs[3] = texture("textures/checker.png", true, true);
 
   // Set camera properties
