@@ -18,6 +18,6 @@ void main() {
   // Sample the blend texture
   vec4 blendvalue = texture(blend, tex_coord);
   // Mix the main samples using r component from blend value
-  colour = mix(col1, col2, blendvalue.r);
+  colour = mix(col1, col2, blendvalue.b);
   // *********************************
 }
