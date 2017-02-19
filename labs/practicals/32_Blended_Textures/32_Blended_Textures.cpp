@@ -35,21 +35,21 @@ bool load_content() {
 
 	// Load in blend shader
 	eff.add_shader("32_Blended_Textures/blend.vert", GL_VERTEX_SHADER);
-	eff.add_shader("32_Blended_Textures/blend.frag", GL_FRAGMENT_SHADER);
-	//eff.add_shader("32_Blended_Textures/blend4.frag", GL_FRAGMENT_SHADER);
+	//eff.add_shader("32_Blended_Textures/blend.frag", GL_FRAGMENT_SHADER);
+	eff.add_shader("32_Blended_Textures/blend4.frag", GL_FRAGMENT_SHADER);
 	// Build effect
 	eff.build();
 
 	// Load main two textures
-	texs[0] = texture("textures/grass.jpg");
-	texs[1] = texture("textures/brick.jpg");
+	/*texs[0] = texture("textures/grass.jpg");
+	texs[1] = texture("textures/brick.jpg");*/
 	// Load blend map, try both blend_map1.png and blend_map2.jpg
-	blend_map = texture("textures/tarnish.jpg");
+	blend_map = texture("textures/smoke.png");
 
-	/*texts[0] = texture("textures/grass.jpg");
-	texts[1] = texture("textures/brick.jpg");
-	texts[2] = texture("textures/checker.png");
-	texts[3] = texture("textures/sign.jpg");*/
+	texts[0] = texture("textures/grass.jpg");
+	texts[1] = texture("textures/checker.png");
+	texts[2] = texture("textures/brick.jpg");
+	texts[3] = texture("textures/sign.jpg");
 
 	// Set camera properties
 	cam.set_position(vec3(0.0f, 0.0f, 30.0f));
@@ -82,22 +82,22 @@ bool render() {
 
 	// *********************************
 	// Bind the three textures - use different index for each
-	renderer::bind(texs[0], 0);
+	/*renderer::bind(texs[0], 0);
 	renderer::bind(texs[1], 1);
-	renderer::bind(blend_map, 2);
+	renderer::bind(blend_map, 2);*/
 	// *********************************
-	/*for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 4; ++i) {
 		renderer::bind(texts[i], i);
 	}
-	renderer::bind(blend_map, 4);*/
+	renderer::bind(blend_map, 4);
 
 	// Set the uniform values for textures
-	static int tex_indices[] = { 0, 1 };
+	/*static int tex_indices[] = { 0, 1 };
 	glUniform1iv(eff.get_uniform_location("tex"), 2, tex_indices);
-	glUniform1i(eff.get_uniform_location("blend"), 2);
-	/*static int tex_indices[] = { 0,1,2,3 };
+	glUniform1i(eff.get_uniform_location("blend"), 2);*/
+	static int tex_indices[] = { 0, 1, 2, 3 };
 	glUniform1iv(eff.get_uniform_location("textures"), 4, tex_indices);
-	glUniform1i(eff.get_uniform_location("blend_map"), 4);*/
+	glUniform1i(eff.get_uniform_location("blend_map"), 4);
 
 	// Render the mesh
 	renderer::render(m);

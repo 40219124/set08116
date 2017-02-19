@@ -8,7 +8,7 @@ uniform sampler2D blend_map;
 
 layout(location = 0) in vec2 tex_coord;
 
-layout(location = 10) out vec4 colour;
+layout(location = 0) out vec4 colour;
 
 void main() {
 	vec4 col1 = texture(textures[0], tex_coord);
@@ -18,7 +18,7 @@ void main() {
 
 	vec4 blendvalue = texture(blend_map, tex_coord);
 
-	vec4 mixing = mix(col1, col1, blendvalue.r);
+	vec4 mixing = mix(vec4(0.0f,0.0f,0.0f,1.0f), col1, blendvalue.r);
 	mixing = mix(mixing, col2, blendvalue.g);
 	mixing = mix(mixing, col3, blendvalue.b);
 	mixing = mix(mixing, col4, blendvalue.a);
