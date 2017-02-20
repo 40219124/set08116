@@ -15,7 +15,7 @@ bool load_content() {
 	// Load in model, models/teapot.obj
 	m = mesh(geometry("models/Fexit light_02.obj"));
 	// Load in texture, textures/checker.png
-	tex = texture("textures/sign.jpg");
+	tex = texture("textures/Fexit light_texture.png");
 	// *********************************
 	m.get_transform().scale = vec3(20.0f);
 
