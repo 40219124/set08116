@@ -1,4 +1,4 @@
-#version 440
+#+version 440
 
 // Main textures
 uniform sampler2D tex[2];
