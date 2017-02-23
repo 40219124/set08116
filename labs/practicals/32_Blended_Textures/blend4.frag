@@ -18,10 +18,10 @@ void main() {
 
 	vec4 blendvalue = texture(blend_map, tex_coord);
 
-	vec4 mixing = mix(vec4(0.0f,0.0f,0.0f,1.0f), col1, blendvalue.r);
-	mixing = mix(mixing, col2, blendvalue.g);
-	mixing = mix(mixing, col3, blendvalue.b);
-	mixing = mix(mixing, col4, blendvalue.a);
+	vec4 mixing = mix(vec4(0.0f,0.0f,0.0f,1.0f), col1, blendvalue.a);
+	mixing = mix(mixing, col2, blendvalue.b);
+	mixing = mix(mixing, col3, blendvalue.g);
+	mixing = mix(mixing, col4, blendvalue.r);
 
 	colour = mixing;
 }

@@ -23,7 +23,7 @@ bool load_content() {
 	vector<vec3> positions{ vec3(-1.0f, -1.0f, 0.0f), vec3(1.0f, -1.0f, 0.0f), vec3(-1.0f, 1.0f, 0.0f),
 						   vec3(1.0f, 1.0f, 0.0f) };
 	// Texture coordinates
-	vector<vec2> tex_coords{ vec2(0.0f, 0.0f), vec2(2.0f, 0.0f), vec2(0.0f, 2.0f), vec2(2.0f, 2.0f) };
+	vector<vec2> tex_coords{ vec2(0.0f, 0.0f), vec2(1.0f, 0.0f), vec2(0.0f, 1.0f), vec2(1.0f, 1.0f) };
 	// Add to the geometry
 	geom.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
 	geom.add_buffer(tex_coords, BUFFER_INDEXES::TEXTURE_COORDS_0);
@@ -44,12 +44,12 @@ bool load_content() {
 	/*texs[0] = texture("textures/grass.jpg");
 	texs[1] = texture("textures/brick.jpg");*/
 	// Load blend map, try both blend_map1.png and blend_map2.jpg
-	blend_map = texture("textures/smoke.png");
+	blend_map = texture("textures/User Interface neat.png");
 
-	texts[0] = texture("textures/grass.jpg");
-	texts[1] = texture("textures/checker.png");
-	texts[2] = texture("textures/brick.jpg");
-	texts[3] = texture("textures/sign.jpg");
+	texts[0] = texture("textures/check_1.png");
+	texts[1] = texture("textures/check_3.png");
+	texts[2] = texture("textures/check_5.png");
+	texts[3] = texture("textures/check_2.png");
 
 	// Set camera properties
 	cam.set_position(vec3(0.0f, 0.0f, 30.0f));
