@@ -111,7 +111,7 @@ bool update(float delta_time) {
 	static float range = 20.0f;
 	// *********************************
 
-	       
+
 
 
 
@@ -135,7 +135,7 @@ bool update(float delta_time) {
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_D)) {
 		light.move(vec3(15.0f * delta_time, 0.0f, 0.0f));
 	}
-	// O and P to change range  
+	// O and P to change range
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_O)) {
 		range *= 1 - (0.5f * delta_time);
 	}
