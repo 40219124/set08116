@@ -19,15 +19,15 @@ layout(location = 0) out vec3 vertex_position;
 // Outgoing transformed normal
 layout(location = 1) out vec3 transformed_normal;
 // Outgoing texture coordinate
-layout(location = 2) out vec2 tex_coord_out;
+layout(location = 2) out vec2 tex_coord_frag;
 
 void main() {
   // Set position
   gl_Position = MVP * vec4(position, 1);
   // *********************************
   // Output other values to fragment shader
-
-
-
+  vertex_position = (M * vec4(position, 1.0f)).xyz;
+  transformed_normal = N * normal;
+  tex_coord_frag = tex_coord_in;
   // *********************************
 }

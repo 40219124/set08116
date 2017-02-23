@@ -83,7 +83,7 @@ bool load_content() {
 	meshes["torus"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	// *********************************
 	// Load texture
-	tex = texture("textures/checker.png");
+	tex = texture("textures/check_1.png");
 	// *********************************
 	// ambient intensity (0.3, 0.3, 0.3)
 	light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
