@@ -84,7 +84,7 @@ bool update(float delta_time) {
 	for (int i = 0; i < spheres; ++i) {
 		name = ("sphere" + to_string(i + 1));
 		meshes[name].get_transform().position = (vec3(meshes[name].get_transform().position.x,
-			5.0f * sin((2 * i / spheres) * 2.0f * pi<float>() + time_total * 5.0f),
+			3.0f * sin((2 * i / spheres) * 3.0f * pi<float>() + time_total * 7.0f),
 			meshes[name].get_transform().position.z));
 		//meshes[name].get_transform().rotate(eulerAngleY(time_total));
 	}
