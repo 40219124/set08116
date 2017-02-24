@@ -26,7 +26,7 @@ bool load_content() {
 
 	//meshes["plane"].get_transform().translate(vec3(0.0f, -1.0f, 0.0f));
 
-	meshes["sphere0"] = mesh(geometry_builder().create_sphere());
+	meshes["sphere0"] = mesh(geometry_builder().create_sphere(10, 20, vec3(4.0f, 4.0f, 4.0f)));
 
 	meshes["sphere0"].get_material().set_diffuse(vec4(0.0f, 1.0f, 1.0f, 1.0f));
 	meshes["sphere0"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -37,7 +37,7 @@ bool load_content() {
 	texs["sphere0"] = &tex;
 	hierarchy["sphere0"] = "parent";
 
-	float sphere_count = 20.0f;
+	float sphere_count = 30.0f;
 
 	for (int i = 0; i < sphere_count; ++i) {
 		string name = "sphere" + (to_string(i + 1));
@@ -56,7 +56,7 @@ bool load_content() {
 		hierarchy[name] = "sphere0";
 	}
 
-	pLight.move(vec3(1.0f, 5.0f, 5.0f));
+	pLight.move(vec3(1.0f, 10.0f, 5.0f));
 	pLight.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	pLight.set_range(20.0f);
 
@@ -69,7 +69,7 @@ bool load_content() {
 
 
 	// Set camera properties
-	cam.set_position(vec3(10.0f, 5.0f, 10.0f));
+	cam.set_position(vec3(0.0f, 20.0f, 20.0f));
 	cam.set_target(vec3(0.0f, 0.0f, 0.0f));
 	cam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 	return true;
@@ -78,17 +78,46 @@ bool load_content() {
 
 bool update(float delta_time) {
 	// Update the camera
+
+	//sphere manipulation maths
 	time_total += delta_time;
+	//string to mathematically aquire spheres
 	string name;
+	//the number of meshes -1
 	float spheres = meshes.size() - 1;
+
+	//360 degrees. Shouldn't edit
+	float full_circle = 2.0f * pi<float>();
+	//sphere wave variable manipulation
+	float waves_per_circle = 2.0f;
+	float wibble_speed = 2.0f;
+	float amplitude = 0.50f;
+	float circling_speed = 1.0f;
+
+	vec3 radius = vec3(8.0f, 0.0f, 0.0f);
+	//radius *= 1 + 0.1 * sin(5.0f*time_total);
+	quat rotq;
+	//for loop to access each sphere and transform it
 	for (int i = 0; i < spheres; ++i) {
 		name = ("sphere" + to_string(i + 1));
-		meshes[name].get_transform().position = (vec3(meshes[name].get_transform().position.x,
-			3.0f * sin((2 * i / spheres) * 3.0f * pi<float>() + time_total * 7.0f),
-			meshes[name].get_transform().position.z));
-		//meshes[name].get_transform().rotate(eulerAngleY(time_total));
+		
+		//maths for spherical wibbling
+
+		rotq = meshes[name].get_transform().orientation;
+		rotq = rotate(rotq, amplitude * sin((i / spheres) * waves_per_circle * full_circle + time_total * wibble_speed), vec3(0.0f, 0.0f, 1.0f));
+		meshes[name].get_transform().position = (rotq * vec4(radius * (1.0f + 0.3f * sin((i * waves_per_circle * full_circle / spheres) + time_total * 2.0f * wibble_speed)), 1.0f));
+
+		//maths for cylindrical sphere wibbling
+		/*meshes[name].get_transform().position = (vec3(meshes[name].get_transform().position.x,
+			amplitude * sin((i / spheres) * waves_per_circle * full_circle + time_total * wibble_speed),
+			meshes[name].get_transform().position.z));*/
 	}
-	meshes["sphere0"].get_transform().rotate(eulerAngleY(delta_time));
+	//rotate centre, parent sphere
+	/*meshes["sphere0"].get_transform().position = vec3(5.0f * sin(time_total),
+		0.0f,
+		0.0f);*/
+	meshes["sphere0"].get_transform().rotate(eulerAngleY(delta_time * circling_speed));
+
 	cam.update(delta_time);
 	return true;
 }
