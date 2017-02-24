@@ -15,7 +15,7 @@ vector<spot_light> spots(5);
 bool load_content() {
 	// Create plane mesh
 	meshes["plane"] = mesh(geometry_builder::create_plane());
-
+	 
 	// Create scene
 	meshes["box"] = mesh(geometry_builder::create_box());
 	meshes["tetra"] = mesh(geometry_builder::create_tetrahedron());
