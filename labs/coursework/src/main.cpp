@@ -13,7 +13,7 @@ point_light pLight;
 spot_light sLight;
 texture tex;
 effect eff;
-target_camera cam;
+target_camera target_c;
 float time_total = 0.0f;
 
 bool load_content() {
@@ -69,9 +69,9 @@ bool load_content() {
 
 
 	// Set camera properties
-	cam.set_position(vec3(0.0f, 20.0f, 20.0f));
-	cam.set_target(vec3(0.0f, 0.0f, 0.0f));
-	cam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
+	target_c.set_position(vec3(0.0f, 20.0f, 20.0f));
+	target_c.set_target(vec3(0.0f, 0.0f, 0.0f));
+	target_c.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 	return true;
 }
 
@@ -118,7 +118,7 @@ bool update(float delta_time) {
 		0.0f);*/
 	meshes["sphere0"].get_transform().rotate(eulerAngleY(delta_time * circling_speed));
 
-	cam.update(delta_time);
+	target_c.update(delta_time);
 	return true;
 }
 
@@ -150,8 +150,8 @@ bool render() {
 		// Create MVP matrix
 		mat4 M = mat4(1.0f);
 		M = transformHierarchyM(item.first, M);
-		mat4 V = cam.get_view();
-		mat4 P = cam.get_projection();
+		mat4 V = target_c.get_view();
+		mat4 P = target_c.get_projection();
 		mat4 MVP = P * V * M;
 		// Set MVP matrix uniform
 		//N = transformHierarchyN(item.first, N);
@@ -164,7 +164,7 @@ bool render() {
 
 		renderer::bind(*texs[item.first], 0);
 		glUniform1i(eff.get_uniform_location("tex"), 0);
-		glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(cam.get_position()));
+		glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(target_c.get_position()));
 
 		renderer::bind(m.get_material(), "mat");
 		renderer::bind(pLight, "point");
