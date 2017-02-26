@@ -247,7 +247,7 @@ void transform_spheres(float delta_time, map<string, mesh> *sphere_structure) {
 	//string to mathematically aquire spheres
 	string name;
 	//the number of sphereRing -1
-	float spheres = (*sphere_structure).size() - 1;
+	float spheres = sphere_structure->size() - 1;
 
 	//360 degrees. Shouldn't edit
 	float full_circle = two_pi<float>();
@@ -336,11 +336,11 @@ bool update(float delta_time) {
 }
 
 void transformHierarchy(mesh *currentMesh, mat4 &M, mat3 &N) {
-	M = (*currentMesh).get_transform().get_transform_matrix();
-	N = (*currentMesh).get_transform().get_normal_matrix();
+	M = currentMesh->get_transform().get_transform_matrix();
+	N = currentMesh->get_transform().get_normal_matrix();
 	while (meshHierarchy[currentMesh] != nullptr) {
-		M = (*meshHierarchy[currentMesh]).get_transform().get_transform_matrix() * M;
-		N = (*meshHierarchy[currentMesh]).get_transform().get_normal_matrix() * N;
+		M = meshHierarchy[currentMesh]->get_transform().get_transform_matrix() * M;
+		N = meshHierarchy[currentMesh]->get_transform().get_normal_matrix() * N;
 		currentMesh = meshHierarchy[currentMesh];
 	}
 }
