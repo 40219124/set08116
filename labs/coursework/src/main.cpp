@@ -14,14 +14,14 @@ map<mesh*, texture*> texs;
 map<mesh*, mesh*> meshHierarchy;
 directional_light dLight;
 point_light pLight;
-spot_light sLight;
+spot_light sLight; 
 texture tex;
 effect eff;
 target_camera target_c;
 free_camera free_c;
 uint cam_state = 0;
 double mouse_x;
-double mouse_y;
+double mouse_y;  
 
 //focus the free cam on a target location
 void freeCamHelp(vec3 target) {
@@ -50,12 +50,12 @@ void freeCamHelp(vec3 target) {
 void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) {
 	// Create the parent sphere
 	(*sphereStructure)["sphere0"] = mesh(geometry_builder().create_sphere(10, 20, vec3(2.5f)));
-	(*sphereStructure)["sphere0"].get_material().set_diffuse(vec4(0.0f, 1.0f, 1.0f, 1.0f));
+	(*sphereStructure)["sphere0"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	(*sphereStructure)["sphere0"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
 	(*sphereStructure)["sphere0"].get_material().set_shininess(25.0f);
 	(*sphereStructure)["sphere0"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	// Add relevant data to other maps
-	texs[&(*sphereStructure)["sphere0"]] = &tex;
+	texs[&(*sphereStructure)["sphere0"]] = &tex; 
 	//(*sphereHierarchy)["sphere0"] = "parent";
 	meshHierarchy[&(*sphereStructure)["sphere0"]] = nullptr;
 
@@ -68,7 +68,7 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 		(*sphereStructure)[name] = mesh(geometry_builder().create_sphere());
 		sphere = &(*sphereStructure)[name];
 		// sets material properties
-		sphere->get_material().set_diffuse(vec4(0.0f, 1.0f, 1.0f, 1.0f));
+		sphere->get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 		sphere->get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		sphere->get_material().set_shininess(25.0f);
 		sphere->get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -84,13 +84,13 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 }
 
 bool load_content() {
-	// Loads in a texture
+	// Loads in a texture   
 	tex = texture("textures/check_1.png");
 
 	skyBox = mesh(geometry_builder().create_box(vec3(200.0f)));
 	skyBox.get_material().set_emissive(vec4(0.2f, 0.2f, 0.2f, 1.0f));
 	texs[&skyBox] = &tex;
-
+	  
 	//sphereRing["parent"] = mesh(geometry_builder().create_plane());
 	//sphereRing["plane"] = mesh(geometry_builder().create_plane());
 	//sphereRing["plane"].get_transform().translate(vec3(0.0f, -1.0f, 0.0f));
@@ -103,20 +103,24 @@ bool load_content() {
 	sphereRing2["sphere0"].get_transform().translate(vec3(40.0f, 20.0f, 30.0f));
 	sphereRing2["sphere0"].get_transform().rotate(rotate(quat(), half_pi<float>(), vec3(1.0f, 0.0f, 0.0f)));
 	sphereRing2["sphere0"].get_transform().scale = vec3(0.5f);
-	meshHierarchy[&sphereRing2["sphere0"]] = &sphereRing["sphere0"];
+	//meshHierarchy[&sphereRing2["sphere0"]] = &sphereRing["sphere0"];
 	sphereRing3["sphere0"].get_transform().translate(vec3(40.0f, 0.0f, -30.0f));
 	sphereRing3["sphere0"].get_transform().scale = vec3(0.8f);
-	meshHierarchy[&sphereRing3["sphere0"]] = &sphereRing["sphere0"];
+	//meshHierarchy[&sphereRing3["sphere0"]] = &sphereRing["sphere0"];
 	sphereRing4["sphere0"].get_transform().translate(vec3(-40.0f, -20.0f, -30.0f));
 	sphereRing4["sphere0"].get_transform().scale = vec3(0.3f);
-	meshHierarchy[&sphereRing4["sphere0"]] = &sphereRing["sphere0"];
+	//meshHierarchy[&sphereRing4["sphere0"]] = &sphereRing["sphere0"];
 
 	//meshHierarchy[&skyBox] = &sphereRing["sphere0"]; <------------- motion sickness can be found here
 	// Set point light properties
 	pLight.move(vec3(0.0f, 10.0f, 10.0f));
 	pLight.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	pLight.set_range(20.0f);
-
+	// Set directional light properties
+	dLight.set_ambient_intensity(vec4(0.2f, 0.0f, 0.0f, 1.0f));
+	dLight.set_direction(normalize(vec3(0.0f, 1.0f, 0.0f))); 
+	dLight.set_light_colour(vec4(0.0f, 1.0f, 1.0f, 1.0f));
+	 
 	// Load in shaders
 	eff.add_shader("shaders/coursework.vert", GL_VERTEX_SHADER);
 	eff.add_shader("shaders/coursework.frag", GL_FRAGMENT_SHADER);
@@ -124,13 +128,13 @@ bool load_content() {
 	eff.build();
 
 
-
-	// Set target camera properties
+	 
+	// Set target camera properties 
 	target_c.set_position(vec3(0.0f, 20.0f, 20.0f));
 	target_c.set_target(vec3(0.0f, 0.0f, 0.0f));
 	target_c.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 	// Set free camera properties
-	free_c.set_position(vec3(20.0f, 20.0f, -20.0f));
+	free_c.set_position(vec3(20.0f, 20.0f, 20.0f));
 	free_c.set_target(vec3(0.0f, 0.0f, 0.0f));
 	freeCamHelp(free_c.get_target());
 	free_c.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
@@ -380,7 +384,7 @@ void renderSpheres(map<string, mesh> *sphereStructure,	mat4 V, mat4 P) {
 	mat4 M;
 	mat4 MVP;
 	mat3 N;
-	for ( pair<const string, mesh> &item : *sphereStructure) {
+	for (pair<const string, mesh> &item : *sphereStructure) {
 		// get the hierarchy of transformations associated with the object
 		mesh* currentMesh = &item.second;
 		transformHierarchy(currentMesh, M, N);
@@ -397,8 +401,6 @@ void renderSpheres(map<string, mesh> *sphereStructure,	mat4 V, mat4 P) {
 		glUniform1i(eff.get_uniform_location("tex"), 0);
 		//bind material
 		renderer::bind((*currentMesh).get_material(), "mat");
-		//bind light
-		renderer::bind(pLight, "point");
 
 		// Render geometry
 		renderer::render(*currentMesh);
@@ -408,6 +410,9 @@ void renderSpheres(map<string, mesh> *sphereStructure,	mat4 V, mat4 P) {
 bool render() {
 	// Bind effect
 	renderer::bind(eff);
+	//bind light
+	renderer::bind(pLight, "point");
+	renderer::bind(dLight, "direct");
 
 	mat4 M;
 	mat4 V;
@@ -421,7 +426,6 @@ bool render() {
 	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 	glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(skyBox.get_transform().get_normal_matrix()));
 
-	renderer::bind(pLight, "point");
 	renderer::bind(skyBox.get_material(), "mat");
 	renderer::bind(*texs[&skyBox], 0);
 	glUniform1i(eff.get_uniform_location("tex"), 0);

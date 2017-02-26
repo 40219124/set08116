@@ -90,7 +90,7 @@ bool load_content() {
 	// Light colour white
 	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	// Light direction (1.0, 1.0, -1.0)
-	light.set_direction(vec3(1.0f, 1.0f, -1.0f));
+	light.set_direction(normalize(vec3(1.0f, 1.0f, -1.0f)));
 	// Load in shaders
 	eff.add_shader("48_Phong_Shading/phong.vert", GL_VERTEX_SHADER);
 	eff.add_shader("48_Phong_Shading/phong.frag", GL_FRAGMENT_SHADER);
