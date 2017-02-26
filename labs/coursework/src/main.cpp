@@ -11,10 +11,7 @@ map<string, mesh> sphereRing3;
 map<string, mesh> sphereRing4;
 mesh skyBox;
 map<string, texture*> texs;
-map<string, string> hierarchy1;
-map<string, string> hierarchy2;
-map<string, string> hierarchy3;
-map<string, string> hierarchy4;
+map<mesh*, mesh*> meshHierarchy;
 directional_light dLight;
 point_light pLight;
 spot_light sLight;
@@ -51,7 +48,7 @@ void freeCamHelp(vec3 target) {
 	free_c.set_pitch(pitch);
 }
 //make a map of spheres
-void makeSphereStructure(map<string, mesh>* sphereStructure, map<string, string>* sphereHierarchy, float sphereCount) {
+void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) {
 	// Create the parent sphere
 	(*sphereStructure)["sphere0"] = mesh(geometry_builder().create_sphere(10, 20, vec3(2.5f)));
 	(*sphereStructure)["sphere0"].get_material().set_diffuse(vec4(0.0f, 1.0f, 1.0f, 1.0f));
@@ -60,7 +57,8 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, map<string, string>
 	(*sphereStructure)["sphere0"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	// Add relevant data to other maps
 	texs["sphere0"] = &tex;
-	(*sphereHierarchy)["sphere0"] = "parent";
+	//(*sphereHierarchy)["sphere0"] = "parent";
+	meshHierarchy[&(*sphereStructure)["sphere0"]] = nullptr;
 
 	//loop to generate x amount of spheres
 	for (int i = 0; i < sphereCount; ++i) {
@@ -78,7 +76,8 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, map<string, string>
 		// maps a texture to the sphere's name
 		texs[name] = &tex;
 		// sets the sphere's parent object
-		(*sphereHierarchy)[name] = "sphere0";
+		//(*sphereHierarchy)[name] = "sphere0";
+		meshHierarchy[&(*sphereStructure)[name]] = &(*sphereStructure)["sphere0"];
 	}
 }
 
@@ -93,19 +92,23 @@ bool load_content() {
 	//sphereRing["plane"] = mesh(geometry_builder().create_plane());
 	//sphereRing["plane"].get_transform().translate(vec3(0.0f, -1.0f, 0.0f));
 
-	makeSphereStructure(&sphereRing, &hierarchy1, 20.0f);
-	makeSphereStructure(&sphereRing2, &hierarchy2, 30.0f);
-	makeSphereStructure(&sphereRing3, &hierarchy3, 15.0f);
-	makeSphereStructure(&sphereRing4, &hierarchy4, 10.0f);
+	makeSphereStructure(&sphereRing, 20.0f);
+	makeSphereStructure(&sphereRing2, 30.0f);
+	makeSphereStructure(&sphereRing3, 15.0f);
+	makeSphereStructure(&sphereRing4, 10.0f);
 
 	sphereRing2["sphere0"].get_transform().translate(vec3(40.0f, 20.0f, 30.0f));
 	sphereRing2["sphere0"].get_transform().rotate(rotate(quat(), half_pi<float>(), vec3(1.0f, 0.0f, 0.0f)));
 	sphereRing2["sphere0"].get_transform().scale = vec3(0.5f);
+	meshHierarchy[&sphereRing2["sphere0"]] = &sphereRing["sphere0"];
 	sphereRing3["sphere0"].get_transform().translate(vec3(40.0f, 0.0f, -30.0f));
 	sphereRing3["sphere0"].get_transform().scale = vec3(0.8f);
+	meshHierarchy[&sphereRing3["sphere0"]] = &sphereRing["sphere0"];
 	sphereRing4["sphere0"].get_transform().translate(vec3(-40.0f, -20.0f, -30.0f));
 	sphereRing4["sphere0"].get_transform().scale = vec3(0.3f);
+	meshHierarchy[&sphereRing4["sphere0"]] = &sphereRing["sphere0"];
 
+	meshHierarchy[&skyBox] = &sphereRing["sphere0"];
 	// Set point light properties
 	pLight.move(vec3(0.0f, 10.0f, 10.0f));
 	pLight.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -249,13 +252,13 @@ void transform_spheres(float delta_time, map<string, mesh>* sphere_structure) {
 	//360 degrees. Shouldn't edit
 	float full_circle = two_pi<float>();
 	//sphere wave variable manipulation
-	float waves_per_circle = 2.0f;	//number of sin waves in the vertical
-	float wibble_speed = 1.0f;		//speed at which the spheres travel the sin arc
-	float amplitude = 0.3f;			//radians around z axis (pi/2 goes to poles)
+	float waves_per_circle = 10.0f;	//number of sin waves in the vertical
+	float wibble_speed = 2.0f;		//speed at which the spheres travel the sin arc
+	float amplitude = half_pi<float>();			//radians around z axis (pi/2 goes to poles)
 	float circling_speed = 1.0f;	//radians per second
-									//ring radius transformations
-	float waves_per_ring = 5.0f;	//number of sin waves in the horizontal
-	float change = 0.7f;			// percentage the radius fluctuates by
+	//ring radius transformations
+	float waves_per_ring = 2.0f;	//number of sin waves in the horizontal
+	float change = 0.4f;			// percentage the radius fluctuates by
 	float width_disable = 1.0f;		//0 for no radial fluctuation, 1 for regular radial fluctuation
 	float shrink_factor = spheres / (12.0f + spheres);
 
@@ -327,35 +330,18 @@ bool update(float delta_time) {
 	transform_spheres(delta_time, &sphereRing3);
 	transform_spheres(delta_time, &sphereRing4);
 
+	sphereRing["sphere0"].get_transform().orientation = (rotate(quat(), delta_time / 2.0f, vec3(1.0f, 0.0f, 0.0f)) * sphereRing["sphere0"].get_transform().orientation);
+
 	return true;
 }
 
-//A recursive function to get all of the hierarchial transformations to the TRANSFORMATION matrix
-mat4 transformHierarchyM(map<string, mesh> sphereStructure, map<string,string> hierarchy, string first, mat4 M) {
-	// if not the main parent...
-	if (hierarchy[first] != "parent") {
-		//multiply M by the matrix of the current mesh and return the recursive operation
-		M = sphereStructure[first].get_transform().get_transform_matrix() * M;
-		return transformHierarchyM(sphereStructure, hierarchy, hierarchy[first], M);
-	}
-	//if the main parent...
-	else {
-		// return N by the matrix of the current mesh, and do not cal the function again
-		return sphereStructure[first].get_transform().get_transform_matrix() * M;
-	}
-}
-//A recursive function to get all of the hierarchial transformations to the NORMAL matrix
-mat3 transformHierarchyN(map<string, mesh> sphereStructure, map<string, string> hierarchy, string first, mat3 N) {
-	// if not the main parent...
-	if (hierarchy[first] != "parent") {
-		//multiply N by the matrix of the current mesh and return the recursive operation
-		N = sphereStructure[first].get_transform().get_normal_matrix() * N;
-		return transformHierarchyN(sphereStructure, hierarchy, hierarchy[first], N);
-	}
-	//if the main parent...
-	else {
-		// return N by the matrix of the current mesh, and do not cal the function again
-		return sphereStructure[first].get_transform().get_normal_matrix() * N;
+void transformHierarchy(mesh* currentMesh, mat4* M, mat3* N) {
+	*M = (*currentMesh).get_transform().get_transform_matrix();
+	*N = (*currentMesh).get_transform().get_normal_matrix();
+	while (meshHierarchy[currentMesh] != nullptr) {
+		*M = (*meshHierarchy[currentMesh]).get_transform().get_transform_matrix() * *M;
+		*N = (*meshHierarchy[currentMesh]).get_transform().get_normal_matrix() * *N;
+		currentMesh = meshHierarchy[currentMesh];
 	}
 }
 // Give the render function the appropriate information based on the currently in-use camera
@@ -382,25 +368,19 @@ void renderCams(mat4* V, mat4* P) {
 	}
 }
 //Render a map of spheres
-void renderSpheres(map<string, mesh> sphereStructure, map<string, string> sphereHierarchy) {
+void renderSpheres(map<string, mesh>* sphereStructure) {
 	mat4 M;
 	mat4 V;
 	mat4 P;
 	mat4 MVP;
-	for (pair<string, mesh> item : sphereStructure) {
-		//set mesh to m
-		mesh m = item.second;
-
+	mat3 N;
+	for ( pair<const string, mesh> &item : *sphereStructure) {
 		// Create MVP matrix
-		M = mat4(1.0f);
 		// get the hierarchy of transformations associated with the object
-		if (item.first != "sphere0") {
-			M = sphereStructure["sphere0"].get_transform().get_transform_matrix() * m.get_transform().get_transform_matrix();
-			//M = transformHierarchyM(sphereStructure, sphereHierarchy, item.first, M);
-		}
-		else {
-			M = m.get_transform().get_transform_matrix();
-		}
+		mesh* currentMesh = &item.second;
+		transformHierarchy(currentMesh, &M, &N);
+		//currentMesh = &item.second;
+
 		renderCams(&V, &P);
 		MVP = P * V * M;
 		// Set MVP matrix uniform
@@ -408,26 +388,18 @@ void renderSpheres(map<string, mesh> sphereStructure, map<string, string> sphere
 		glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 
 		//get normal transform with matrix heirarchy changes
-		mat3 N = mat3(1.0f);
-		if (item.first != "sphere0") {
-			N = sphereStructure["sphere0"].get_transform().get_normal_matrix() * m.get_transform().get_normal_matrix();
-		}
-		else {
-			N = m.get_transform().get_normal_matrix();
-		}
-		//N = transformHierarchyN(sphereStructure, sphereHierarchy, item.first, N);
 		glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(N));
 
 		//bind the texture which shares the name of the mesh
 		renderer::bind(tex, 0);
 		glUniform1i(eff.get_uniform_location("tex"), 0);
 		//bind material
-		renderer::bind(m.get_material(), "mat");
+		renderer::bind((*currentMesh).get_material(), "mat");
 		//bind light
 		renderer::bind(pLight, "point");
 
 		// Render geometry
-		renderer::render(m);
+		renderer::render(*currentMesh);
 	}
 }
 
@@ -439,8 +411,9 @@ bool render() {
 	mat4 V;
 	mat4 P;
 	mat4 MVP;
-
-	M = skyBox.get_transform().get_transform_matrix();
+	mat3 N;
+	transformHierarchy(&skyBox, &M, &N);
+	//M = skyBox.get_transform().get_transform_matrix();
 	renderCams(&V, &P);
 	MVP = P * (V * M);
 	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
@@ -456,10 +429,10 @@ bool render() {
 	renderer::render(skyBox);
 	glEnable(GL_CULL_FACE);
 
-	renderSpheres(sphereRing, hierarchy1);
-	renderSpheres(sphereRing2, hierarchy2);
-	renderSpheres(sphereRing3, hierarchy3);
-	renderSpheres(sphereRing4, hierarchy4);
+	renderSpheres(&sphereRing);
+	renderSpheres(&sphereRing2);
+	renderSpheres(&sphereRing3);
+	renderSpheres(&sphereRing4);
 	return true;
 }
 
