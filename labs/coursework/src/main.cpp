@@ -220,7 +220,60 @@ void free_manipulation(float delta_time) {
 	free_c.update(delta_time);
 }
 
+void transform_spheres(float delta_time, map<string, mesh>* sphere_structure) {
+	//string to mathematically aquire spheres
+	string name;
+	//the number of sphereRing -1
+	float spheres = (*sphere_structure).size() - 1;
+
+	//360 degrees. Shouldn't edit
+	float full_circle = two_pi<float>();
+	//sphere wave variable manipulation
+	float waves_per_circle = 5.0f;	//number of sin waves in the vertical
+	float wibble_speed = 1.0f;		//speed at which the spheres travel the sin arc
+	float amplitude = 1.2f;			//radians around z axis (pi/2 goes to poles)
+	float circling_speed = 1.0f;	//radians per second
+									//ring radius transformations
+	float waves_per_ring = 4.0f;	//number of sin waves in the horizontal
+	float change = 0.3f;			// percentage the radius fluctuates by
+	float width_disable = 1.0f;		//0 for no radial fluctuation, 1 for regular radial fluctuation
+	float shrink_factor = spheres / (12.0f + spheres);
+
+	vec3 radius = vec3(13.0f, 0.0f, 0.0f);
+	vec3 calculated_radius;
+	quat rotq;
+	float distFromO;
+	//for loop to access each sphere and transform it
+	for (int i = 0; i < spheres; ++i) {
+		name = ("sphere" + to_string(i + 1));
+		//maths for spherical wibbling
+		rotq = (*sphere_structure)[name].get_transform().orientation;																									//initialise rotation to the sphere's current rotation
+		rotq = rotate(rotq, amplitude * sin((i / spheres) * waves_per_circle * full_circle + time_total * wibble_speed), vec3(0.0f, 0.0f, 1.0f));				//adds rotation around z axis to give effect of a sphere
+		calculated_radius = radius * (1.0f + change * width_disable * sin((i * waves_per_ring * full_circle / spheres) + time_total * 2.0f * wibble_speed));	//calculates radius size based on sin fluctuations
+		(*sphere_structure)[name].get_transform().position = rotq * calculated_radius;																					//multiplies radius by rotation to get sphere position
+																																								//to change sphere scale based on distance from the origin
+		distFromO = calculated_radius.x;
+		(*sphere_structure)[name].get_transform().scale = vec3(shrink_factor * pi<float>() * distFromO / spheres);
+
+		//--------------maths for cylindrical sphere wibbling------------------
+		/*sphereRing[name].get_transform().position = (vec3(sphereRing[name].get_transform().position.x,
+		amplitude * sin((i / spheres) * waves_per_circle * full_circle + time_total * wibble_speed),
+		sphereRing[name].get_transform().position.z));*/
+		//---------------------------------------------------------------------
+	}
+
+	//to move the centre sphere from side to side
+	float centre_movement = 0.0f;
+	(*sphere_structure)["sphere0"].get_transform().position = vec3(centre_movement * sin(time_total),
+		0.0f,
+		0.0f);
+
+	//rotate centre (parent) sphere
+	(*sphere_structure)["sphere0"].get_transform().rotate(eulerAngleY(delta_time * circling_speed));
+}
+
 bool update(float delta_time) {
+	//print fps
 	cout << 1.0f / delta_time << endl;
 	//which camera type to use
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_Z)) {
@@ -248,51 +301,8 @@ bool update(float delta_time) {
 
 	//sphere manipulation maths
 	time_total += delta_time;
-	//string to mathematically aquire spheres
-	string name;
-	//the number of sphereRing -1
-	float spheres = sphereRing.size() - 1;
-
-	//360 degrees. Shouldn't edit
-	float full_circle = two_pi<float>();
-	//sphere wave variable manipulation
-	float waves_per_circle = 5.0f;	//number of sin waves in the vertical
-	float wibble_speed = 1.0f;		//speed at which the spheres travel the sin arc
-	float amplitude = 1.2f;			//radians around z axis (pi/2 goes to poles)
-	float circling_speed = 1.0f;	//radians per second
-	//ring radius transformations
-	float waves_per_ring = 4.0f;	//number of sin waves in the horizontal
-	float change = 0.3f;			// percentage the radius fluctuates by
-	float width_disable = 1.0f;		//0 for no radial fluctuation, 1 for regular radial fluctuation
-	float shrink_factor = spheres / (12.0f + spheres);
-
-	vec3 radius = vec3(13.0f, 0.0f, 0.0f);
-	vec3 calculated_radius;
-	quat rotq;
-	float distFromO;
-	//for loop to access each sphere and transform it
-	for (int i = 0; i < spheres; ++i) {
-		name = ("sphere" + to_string(i + 1));
-		//maths for spherical wibbling
-		rotq = sphereRing[name].get_transform().orientation;
-		rotq = rotate(rotq, amplitude * sin((i / spheres) * waves_per_circle * full_circle + time_total * wibble_speed), vec3(0.0f, 0.0f, 1.0f)); //rotates around z axis to give effect of a sphere
-		calculated_radius = radius * (1.0f + change * width_disable * sin((i * waves_per_ring * full_circle / spheres) + time_total * 2.0f * wibble_speed));
-		sphereRing[name].get_transform().position = rotq * calculated_radius;
-		distFromO = calculated_radius.x;
-		sphereRing[name].get_transform().scale = vec3(shrink_factor * pi<float>() * distFromO / spheres);
-		//maths for cylindrical sphere wibbling
-		/*sphereRing[name].get_transform().position = (vec3(sphereRing[name].get_transform().position.x,
-			amplitude * sin((i / spheres) * waves_per_circle * full_circle + time_total * wibble_speed),
-			sphereRing[name].get_transform().position.z));*/
-	}
-
-	// -------- to move the centre sphere from side to side
-	sphereRing["sphere0"].get_transform().position = vec3(5.0f * sin(time_total),
-		0.0f,
-		0.0f);
-
-		//rotate centre (parent) sphere
-	sphereRing["sphere0"].get_transform().rotate(eulerAngleY(delta_time * circling_speed));
+	
+	transform_spheres(delta_time, &sphereRing);
 
 	return true;
 }
