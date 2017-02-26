@@ -97,7 +97,7 @@ bool load_content() {
 	makeSphereStructure(&sphereRing, 40.0f);
 	makeSphereStructure(&sphereRing2, 30.0f);
 	makeSphereStructure(&sphereRing3, 15.0f);
-	makeSphereStructure(&sphereRing4, 30.0f);
+	makeSphereStructure(&sphereRing4, 20.0f);
 
 	sphereRing2["sphere0"].get_transform().translate(vec3(40.0f, 20.0f, 30.0f));
 	sphereRing2["sphere0"].get_transform().rotate(rotate(quat(), half_pi<float>(), vec3(1.0f, 0.0f, 0.0f)));
@@ -110,7 +110,7 @@ bool load_content() {
 	sphereRing4["sphere0"].get_transform().scale = vec3(0.3f);
 	meshHierarchy[&sphereRing4["sphere0"]] = &sphereRing["sphere0"];
 
-	meshHierarchy[&skyBox] = &sphereRing["sphere0"];
+	//meshHierarchy[&skyBox] = &sphereRing["sphere0"]; <------------- motion sickness can be found here
 	// Set point light properties
 	pLight.move(vec3(0.0f, 10.0f, 10.0f));
 	pLight.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
