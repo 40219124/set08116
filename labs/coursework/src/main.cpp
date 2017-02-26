@@ -21,6 +21,7 @@ float time_total = 0.0f;
 double mouse_x;
 double mouse_y;
 
+//focus the free cam on a target location
 void freeCamHelp(vec3 target) {
 	target = normalize(target - free_c.get_position());
 	vec3 forward = vec3(0.0f, 0.0f, -1.0f);
@@ -66,7 +67,7 @@ bool load_content() {
 	hierarchy["sphere0"] = "parent";
 
 	//loop to generate x amount of spheres
-	float sphere_count = 30.0f;
+	float sphere_count = 50.0f;
 	for (int i = 0; i < sphere_count; ++i) {
 		//creates an index for the map
 		string name = "sphere" + (to_string(i + 1));
@@ -147,7 +148,7 @@ void target_manipulation(float delta_time) {
 	//update camera
 	target_c.update(delta_time);
 }
-
+//free cam manipulation
 void free_manipulation(float delta_time) {
 	//find window sizes and proportions
 	static const float screen_w = static_cast<float>(renderer::get_screen_width());
@@ -220,7 +221,7 @@ void free_manipulation(float delta_time) {
 }
 
 bool update(float delta_time) {
-
+	cout << 1.0f / delta_time << endl;
 	//which camera type to use
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_Z)) {
 		cam_state = 0; //target cam
@@ -253,25 +254,32 @@ bool update(float delta_time) {
 	float spheres = sphereRing.size() - 1;
 
 	//360 degrees. Shouldn't edit
-	float full_circle = 2.0f * pi<float>();
+	float full_circle = two_pi<float>();
 	//sphere wave variable manipulation
-	float waves_per_circle = 2.0f;
-	float wibble_speed = 2.0f;
-	float amplitude = 0.50f;
-	float circling_speed = 1.0f;
+	float waves_per_circle = 5.0f;	//number of sin waves in the vertical
+	float wibble_speed = 1.0f;		//speed at which the spheres travel the sin arc
+	float amplitude = 1.2f;			//radians around z axis (pi/2 goes to poles)
+	float circling_speed = 1.0f;	//radians per second
 	//ring radius transformations
-	float change = 0.3f;  // percentage
+	float waves_per_ring = 4.0f;	//number of sin waves in the horizontal
+	float change = 0.3f;			// percentage the radius fluctuates by
+	float width_disable = 1.0f;		//0 for no radial fluctuation, 1 for regular radial fluctuation
+	float shrink_factor = spheres / (12.0f + spheres);
 
-	vec3 radius = vec3(8.0f, 0.0f, 0.0f);
+	vec3 radius = vec3(13.0f, 0.0f, 0.0f);
+	vec3 calculated_radius;
 	quat rotq;
+	float distFromO;
 	//for loop to access each sphere and transform it
 	for (int i = 0; i < spheres; ++i) {
 		name = ("sphere" + to_string(i + 1));
 		//maths for spherical wibbling
 		rotq = sphereRing[name].get_transform().orientation;
 		rotq = rotate(rotq, amplitude * sin((i / spheres) * waves_per_circle * full_circle + time_total * wibble_speed), vec3(0.0f, 0.0f, 1.0f)); //rotates around z axis to give effect of a sphere
-		sphereRing[name].get_transform().position = (rotq * vec4(radius * (1.0f + change * sin((i * waves_per_circle * full_circle / spheres) + time_total * 2.0f * wibble_speed)), 1.0f));
-
+		calculated_radius = radius * (1.0f + change * width_disable * sin((i * waves_per_ring * full_circle / spheres) + time_total * 2.0f * wibble_speed));
+		sphereRing[name].get_transform().position = rotq * calculated_radius;
+		distFromO = calculated_radius.x;
+		sphereRing[name].get_transform().scale = vec3(shrink_factor * pi<float>() * distFromO / spheres);
 		//maths for cylindrical sphere wibbling
 		/*sphereRing[name].get_transform().position = (vec3(sphereRing[name].get_transform().position.x,
 			amplitude * sin((i / spheres) * waves_per_circle * full_circle + time_total * wibble_speed),
@@ -279,9 +287,9 @@ bool update(float delta_time) {
 	}
 
 	// -------- to move the centre sphere from side to side
-	/*sphereRing["sphere0"].get_transform().position = vec3(5.0f * sin(time_total),
+	sphereRing["sphere0"].get_transform().position = vec3(5.0f * sin(time_total),
 		0.0f,
-		0.0f);*/
+		0.0f);
 
 		//rotate centre (parent) sphere
 	sphereRing["sphere0"].get_transform().rotate(eulerAngleY(delta_time * circling_speed));
@@ -318,7 +326,7 @@ mat3 transformHierarchyN(string first, mat3 N) {
 		return sphereRing[first].get_transform().get_normal_matrix() * N;
 	}
 }
-
+// Give the render function the appropriate information based on the currently in-use camera
 void renderCams(mat4* V, mat4* P) {
 	switch (cam_state) {
 	case(0):
