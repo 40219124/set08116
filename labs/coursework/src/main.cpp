@@ -97,7 +97,7 @@ bool load_content() {
 	makeSphereStructure(&sphereRing, 40.0f);
 	makeSphereStructure(&sphereRing2, 30.0f);
 	makeSphereStructure(&sphereRing3, 15.0f);
-	makeSphereStructure(&sphereRing4, 20.0f);
+	makeSphereStructure(&sphereRing4, 30.0f);
 
 	sphereRing2["sphere0"].get_transform().translate(vec3(40.0f, 20.0f, 30.0f));
 	sphereRing2["sphere0"].get_transform().rotate(rotate(quat(), half_pi<float>(), vec3(1.0f, 0.0f, 0.0f)));
@@ -340,14 +340,15 @@ bool update(float delta_time) {
 
 	return true;
 }
-
+// Aquire the transformation matrix of a child object
 void transformHierarchy(mesh *currentMesh, mat4 &M, mat3 &N) {
 	M = currentMesh->get_transform().get_transform_matrix();
 	N = currentMesh->get_transform().get_normal_matrix();
-	while (meshHierarchy[currentMesh] != nullptr) {
-		M = meshHierarchy[currentMesh]->get_transform().get_transform_matrix() * M;
-		N = meshHierarchy[currentMesh]->get_transform().get_normal_matrix() * N;
-		currentMesh = meshHierarchy[currentMesh];
+	mesh *cMesh = meshHierarchy[currentMesh];
+	while (cMesh != nullptr) {
+		M = cMesh->get_transform().get_transform_matrix() * M;
+		N = cMesh->get_transform().get_normal_matrix() * N;
+		cMesh = meshHierarchy[cMesh];
 	}
 }
 // Give the render function the appropriate information based on the currently in-use camera
