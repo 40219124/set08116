@@ -10,7 +10,7 @@ map<string, mesh> sphereRing2;
 map<string, mesh> sphereRing3;
 map<string, mesh> sphereRing4;
 mesh skyBox;
-map<string, texture*> texs;
+map<mesh*, texture*> texs;
 map<mesh*, mesh*> meshHierarchy;
 directional_light dLight;
 point_light pLight;
@@ -55,7 +55,7 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 	(*sphereStructure)["sphere0"].get_material().set_shininess(25.0f);
 	(*sphereStructure)["sphere0"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	// Add relevant data to other maps
-	texs["sphere0"] = &tex;
+	texs[&(*sphereStructure)["sphere0"]] = &tex;
 	//(*sphereHierarchy)["sphere0"] = "parent";
 	meshHierarchy[&(*sphereStructure)["sphere0"]] = nullptr;
 
@@ -76,7 +76,7 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 		sphere->get_transform().rotate(eulerAngleY(2.0f * i * pi<float>() / sphereCount));
 		sphere->get_transform().translate(vec3((*sphereStructure)[name].get_transform().get_transform_matrix() * vec4(/*sphere_count/4.0f*/10.0f, 0.0f, 0.0f, 1.0f)));
 		// maps a texture to the sphere's name
-		texs[name] = &tex;
+		texs[sphere] = &tex;
 		// sets the sphere's parent object
 		//(*sphereHierarchy)[name] = "sphere0";
 		meshHierarchy[sphere] = &(*sphereStructure)["sphere0"];
@@ -89,6 +89,7 @@ bool load_content() {
 
 	skyBox = mesh(geometry_builder().create_box(vec3(200.0f)));
 	skyBox.get_material().set_emissive(vec4(0.2f, 0.2f, 0.2f, 1.0f));
+	texs[&skyBox] = &tex;
 
 	//sphereRing["parent"] = mesh(geometry_builder().create_plane());
 	//sphereRing["plane"] = mesh(geometry_builder().create_plane());
@@ -392,7 +393,7 @@ void renderSpheres(map<string, mesh> *sphereStructure,	mat4 V, mat4 P) {
 		glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(N));
 
 		//bind the texture which shares the name of the mesh
-		renderer::bind(tex, 0);
+		renderer::bind(*texs[currentMesh], 0);
 		glUniform1i(eff.get_uniform_location("tex"), 0);
 		//bind material
 		renderer::bind((*currentMesh).get_material(), "mat");
@@ -422,7 +423,7 @@ bool render() {
 
 	renderer::bind(pLight, "point");
 	renderer::bind(skyBox.get_material(), "mat");
-	renderer::bind(tex, 0);
+	renderer::bind(*texs[&skyBox], 0);
 	glUniform1i(eff.get_uniform_location("tex"), 0);
 
 	glDisable(GL_CULL_FACE);
