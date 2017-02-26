@@ -94,10 +94,10 @@ bool load_content() {
 	//sphereRing["plane"] = mesh(geometry_builder().create_plane());
 	//sphereRing["plane"].get_transform().translate(vec3(0.0f, -1.0f, 0.0f));
 
-	makeSphereStructure(&sphereRing, 40.0f);
+	makeSphereStructure(&sphereRing, 30.0f);
 	makeSphereStructure(&sphereRing2, 30.0f);
 	makeSphereStructure(&sphereRing3, 15.0f);
-	makeSphereStructure(&sphereRing4, 30.0f);
+	makeSphereStructure(&sphereRing4, 25.0f);
 
 	sphereRing2["sphere0"].get_transform().translate(vec3(40.0f, 20.0f, 30.0f));
 	sphereRing2["sphere0"].get_transform().rotate(rotate(quat(), half_pi<float>(), vec3(1.0f, 0.0f, 0.0f)));
@@ -380,18 +380,15 @@ void renderSpheres(map<string, mesh> *sphereStructure,	mat4 V, mat4 P) {
 	mat4 MVP;
 	mat3 N;
 	for ( pair<const string, mesh> &item : *sphereStructure) {
-		// Create MVP matrix
 		// get the hierarchy of transformations associated with the object
 		mesh* currentMesh = &item.second;
 		transformHierarchy(currentMesh, M, N);
-		//currentMesh = &item.second;
 
+		// Create MVP matrix
 		MVP = P * (V * M);
 		// Set MVP matrix uniform
 		glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 		glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
-
-		//get normal transform with matrix heirarchy changes
 		glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(N));
 
 		//bind the texture which shares the name of the mesh
