@@ -45,6 +45,37 @@ void freeCamHelp(vec3 target) {
 	free_c.set_pitch(pitch);
 }
 
+void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) {
+	// Create the parent sphere
+	(*sphereStructure)["sphere0"] = mesh(geometry_builder().create_sphere(10, 20, vec3(4.0f, 4.0f, 4.0f)));
+	(*sphereStructure)["sphere0"].get_material().set_diffuse(vec4(0.0f, 1.0f, 1.0f, 1.0f));
+	(*sphereStructure)["sphere0"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	(*sphereStructure)["sphere0"].get_material().set_shininess(25.0f);
+	(*sphereStructure)["sphere0"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	// Add relevant data to other maps
+	texs["sphere0"] = &tex;
+	hierarchy["sphere0"] = "parent";
+
+	//loop to generate x amount of spheres
+	for (int i = 0; i < sphereCount; ++i) {
+		//creates an index for the map
+		string name = "sphere" + (to_string(i + 1));
+		(*sphereStructure)[name] = mesh(geometry_builder().create_sphere());
+		// sets material properties
+		(*sphereStructure)[name].get_material().set_diffuse(vec4(0.0f, 1.0f, 1.0f, 1.0f));
+		(*sphereStructure)[name].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		(*sphereStructure)[name].get_material().set_shininess(25.0f);
+		(*sphereStructure)[name].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		// rotates the sphere on the y-axis, and moves to circumference of ring
+		(*sphereStructure)[name].get_transform().rotate(eulerAngleY(2.0f * i * pi<float>() / sphereCount));
+		(*sphereStructure)[name].get_transform().translate(vec3((*sphereStructure)[name].get_transform().get_transform_matrix() * vec4(/*sphere_count/4.0f*/10.0f, 0.0f, 0.0f, 1.0f)));
+		// maps a texture to the sphere's name
+		texs[name] = &tex;
+		// sets the sphere's parent object
+		hierarchy[name] = "sphere0";
+	}
+}
+
 bool load_content() {
 	// Loads in a texture
 	tex = texture("textures/check_1.png");
@@ -56,35 +87,7 @@ bool load_content() {
 	//sphereRing["plane"] = mesh(geometry_builder().create_plane());
 	//sphereRing["plane"].get_transform().translate(vec3(0.0f, -1.0f, 0.0f));
 
-	// Create the parent sphere
-	sphereRing["sphere0"] = mesh(geometry_builder().create_sphere(10, 20, vec3(4.0f, 4.0f, 4.0f)));
-	sphereRing["sphere0"].get_material().set_diffuse(vec4(0.0f, 1.0f, 1.0f, 1.0f));
-	sphereRing["sphere0"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
-	sphereRing["sphere0"].get_material().set_shininess(25.0f);
-	sphereRing["sphere0"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	// Add relevant data to other maps
-	texs["sphere0"] = &tex;
-	hierarchy["sphere0"] = "parent";
-
-	//loop to generate x amount of spheres
-	float sphere_count = 50.0f;
-	for (int i = 0; i < sphere_count; ++i) {
-		//creates an index for the map
-		string name = "sphere" + (to_string(i + 1));
-		sphereRing[name] = mesh(geometry_builder().create_sphere());
-		// sets material properties
-		sphereRing[name].get_material().set_diffuse(vec4(0.0f, 1.0f, 1.0f, 1.0f));
-		sphereRing[name].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
-		sphereRing[name].get_material().set_shininess(25.0f);
-		sphereRing[name].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-		// rotates the sphere on the y-axis, and moves to circumference of ring
-		sphereRing[name].get_transform().rotate(eulerAngleY(2.0f * i * pi<float>() / sphere_count));
-		sphereRing[name].get_transform().translate(vec3(sphereRing[name].get_transform().get_transform_matrix() * vec4(/*sphere_count/4.0f*/10.0f, 0.0f, 0.0f, 1.0f)));
-		// maps a texture to the sphere's name
-		texs[name] = &tex;
-		// sets the sphere's parent object
-		hierarchy[name] = "sphere0";
-	}
+	makeSphereStructure(&sphereRing, 100.0f);
 
 	// Set point light properties
 	pLight.move(vec3(0.0f, 10.0f, 10.0f));
