@@ -92,10 +92,10 @@ bool load_content() {
 	//sphereRing["plane"] = mesh(geometry_builder().create_plane());
 	//sphereRing["plane"].get_transform().translate(vec3(0.0f, -1.0f, 0.0f));
 
-	makeSphereStructure(&sphereRing, 20.0f);
+	makeSphereStructure(&sphereRing, 40.0f);
 	makeSphereStructure(&sphereRing2, 30.0f);
 	makeSphereStructure(&sphereRing3, 15.0f);
-	makeSphereStructure(&sphereRing4, 10.0f);
+	makeSphereStructure(&sphereRing4, 30.0f);
 
 	sphereRing2["sphere0"].get_transform().translate(vec3(40.0f, 20.0f, 30.0f));
 	sphereRing2["sphere0"].get_transform().rotate(rotate(quat(), half_pi<float>(), vec3(1.0f, 0.0f, 0.0f)));
@@ -243,7 +243,7 @@ void free_manipulation(float delta_time) {
 	free_c.update(delta_time);
 }
 //transform the spheres in a sphere map
-void transform_spheres(float delta_time, map<string, mesh>* sphere_structure) {
+void transform_spheres(float delta_time, map<string, mesh> *sphere_structure) {
 	//string to mathematically aquire spheres
 	string name;
 	//the number of sphereRing -1
@@ -335,54 +335,51 @@ bool update(float delta_time) {
 	return true;
 }
 
-void transformHierarchy(mesh* currentMesh, mat4* M, mat3* N) {
-	*M = (*currentMesh).get_transform().get_transform_matrix();
-	*N = (*currentMesh).get_transform().get_normal_matrix();
+void transformHierarchy(mesh *currentMesh, mat4 &M, mat3 &N) {
+	M = (*currentMesh).get_transform().get_transform_matrix();
+	N = (*currentMesh).get_transform().get_normal_matrix();
 	while (meshHierarchy[currentMesh] != nullptr) {
-		*M = (*meshHierarchy[currentMesh]).get_transform().get_transform_matrix() * *M;
-		*N = (*meshHierarchy[currentMesh]).get_transform().get_normal_matrix() * *N;
+		M = (*meshHierarchy[currentMesh]).get_transform().get_transform_matrix() * M;
+		N = (*meshHierarchy[currentMesh]).get_transform().get_normal_matrix() * N;
 		currentMesh = meshHierarchy[currentMesh];
 	}
 }
 // Give the render function the appropriate information based on the currently in-use camera
-void renderCams(mat4* V, mat4* P) {
+void renderCams(mat4 &V, mat4 &P) {
 	switch (cam_state) {
 	case(0):
-		*V = target_c.get_view();
-		*P = target_c.get_projection();
+		V = target_c.get_view();
+		P = target_c.get_projection();
 		//set camera location, eye_pos
 		glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(target_c.get_position()));
 		break;
 	case(1):
-		*V = free_c.get_view();
-		*P = free_c.get_projection();
+		V = free_c.get_view();
+		P = free_c.get_projection();
 		//set camera location, eye_pos
 		glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(free_c.get_position()));
 		break;
 	default:
-		*V = target_c.get_view();
-		*P = target_c.get_projection();
+		V = target_c.get_view();
+		P = target_c.get_projection();
 		//set camera location, eye_pos
 		glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(target_c.get_position()));
 		break;
 	}
 }
 //Render a map of spheres
-void renderSpheres(map<string, mesh>* sphereStructure) {
+void renderSpheres(map<string, mesh> *sphereStructure,	mat4 V, mat4 P) {
 	mat4 M;
-	mat4 V;
-	mat4 P;
 	mat4 MVP;
 	mat3 N;
 	for ( pair<const string, mesh> &item : *sphereStructure) {
 		// Create MVP matrix
 		// get the hierarchy of transformations associated with the object
 		mesh* currentMesh = &item.second;
-		transformHierarchy(currentMesh, &M, &N);
+		transformHierarchy(currentMesh, M, N);
 		//currentMesh = &item.second;
 
-		renderCams(&V, &P);
-		MVP = P * V * M;
+		MVP = P * (V * M);
 		// Set MVP matrix uniform
 		glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 		glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
@@ -412,9 +409,8 @@ bool render() {
 	mat4 P;
 	mat4 MVP;
 	mat3 N;
-	transformHierarchy(&skyBox, &M, &N);
-	//M = skyBox.get_transform().get_transform_matrix();
-	renderCams(&V, &P);
+	transformHierarchy(&skyBox, M, N);
+	renderCams(V, P);
 	MVP = P * (V * M);
 	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
@@ -429,10 +425,10 @@ bool render() {
 	renderer::render(skyBox);
 	glEnable(GL_CULL_FACE);
 
-	renderSpheres(&sphereRing);
-	renderSpheres(&sphereRing2);
-	renderSpheres(&sphereRing3);
-	renderSpheres(&sphereRing4);
+	renderSpheres(&sphereRing, V, P);
+	renderSpheres(&sphereRing2, V, P);
+	renderSpheres(&sphereRing3, V, P);
+	renderSpheres(&sphereRing4, V, P);
 	return true;
 }
 
