@@ -20,7 +20,6 @@ effect eff;
 target_camera target_c;
 free_camera free_c;
 uint cam_state = 0;
-float time_total = 0.0f;
 double mouse_x;
 double mouse_y;
 
@@ -60,24 +59,27 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 	//(*sphereHierarchy)["sphere0"] = "parent";
 	meshHierarchy[&(*sphereStructure)["sphere0"]] = nullptr;
 
+	mesh *sphere;
+
 	//loop to generate x amount of spheres
 	for (int i = 0; i < sphereCount; ++i) {
 		//creates an index for the map
 		string name = "sphere" + (to_string(i + 1));
 		(*sphereStructure)[name] = mesh(geometry_builder().create_sphere());
+		sphere = &(*sphereStructure)[name];
 		// sets material properties
-		(*sphereStructure)[name].get_material().set_diffuse(vec4(0.0f, 1.0f, 1.0f, 1.0f));
-		(*sphereStructure)[name].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
-		(*sphereStructure)[name].get_material().set_shininess(25.0f);
-		(*sphereStructure)[name].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		sphere->get_material().set_diffuse(vec4(0.0f, 1.0f, 1.0f, 1.0f));
+		sphere->get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		sphere->get_material().set_shininess(25.0f);
+		sphere->get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 		// rotates the sphere on the y-axis, and moves to circumference of ring
-		(*sphereStructure)[name].get_transform().rotate(eulerAngleY(2.0f * i * pi<float>() / sphereCount));
-		(*sphereStructure)[name].get_transform().translate(vec3((*sphereStructure)[name].get_transform().get_transform_matrix() * vec4(/*sphere_count/4.0f*/10.0f, 0.0f, 0.0f, 1.0f)));
+		sphere->get_transform().rotate(eulerAngleY(2.0f * i * pi<float>() / sphereCount));
+		sphere->get_transform().translate(vec3((*sphereStructure)[name].get_transform().get_transform_matrix() * vec4(/*sphere_count/4.0f*/10.0f, 0.0f, 0.0f, 1.0f)));
 		// maps a texture to the sphere's name
 		texs[name] = &tex;
 		// sets the sphere's parent object
 		//(*sphereHierarchy)[name] = "sphere0";
-		meshHierarchy[&(*sphereStructure)[name]] = &(*sphereStructure)["sphere0"];
+		meshHierarchy[sphere] = &(*sphereStructure)["sphere0"];
 	}
 }
 
@@ -243,7 +245,7 @@ void free_manipulation(float delta_time) {
 	free_c.update(delta_time);
 }
 //transform the spheres in a sphere map
-void transform_spheres(float delta_time, map<string, mesh> *sphere_structure) {
+void transform_spheres(float delta_time, float time_total, map<string, mesh> *sphere_structure) {
 	//string to mathematically aquire spheres
 	string name;
 	//the number of sphereRing -1
@@ -266,17 +268,19 @@ void transform_spheres(float delta_time, map<string, mesh> *sphere_structure) {
 	vec3 calculated_radius;
 	quat rotq;
 	float distFromO;
+	mesh *sphere;
 	//for loop to access each sphere and transform it
 	for (int i = 0; i < spheres; ++i) {
 		name = ("sphere" + to_string(i + 1));
+		sphere = &(*sphere_structure)[name];
 		//maths for spherical wibbling
-		rotq = (*sphere_structure)[name].get_transform().orientation;																									//initialise rotation to the sphere's current rotation
+		rotq = sphere->get_transform().orientation;																									//initialise rotation to the sphere's current rotation
 		rotq = rotate(rotq, amplitude * sin((i / spheres) * waves_per_circle * full_circle + time_total * wibble_speed), vec3(0.0f, 0.0f, 1.0f));				//adds rotation around z axis to give effect of a sphere
 		calculated_radius = radius * (1.0f + change * width_disable * sin((i * waves_per_ring * full_circle / spheres) + time_total * 2.0f * wibble_speed));	//calculates radius size based on sin fluctuations
-		(*sphere_structure)[name].get_transform().position = rotq * calculated_radius;																					//multiplies radius by rotation to get sphere position
+		sphere->get_transform().position = rotq * calculated_radius;																					//multiplies radius by rotation to get sphere position
 																																								//to change sphere scale based on distance from the origin
 		distFromO = calculated_radius.x;
-		(*sphere_structure)[name].get_transform().scale = vec3(shrink_factor * pi<float>() * distFromO / spheres);
+		sphere->get_transform().scale = vec3(shrink_factor * pi<float>() * distFromO / spheres);
 
 		//--------------maths for cylindrical sphere wibbling------------------
 		/*sphereRing[name].get_transform().position = (vec3(sphereRing[name].get_transform().position.x,
@@ -298,6 +302,9 @@ void transform_spheres(float delta_time, map<string, mesh> *sphere_structure) {
 bool update(float delta_time) {
 	//print fps
 	cout << 1.0f / delta_time << endl;
+
+	static float time_total = 0.0f;
+	time_total += delta_time;
 	//which camera type to use
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_Z)) {
 		cam_state = 0; //target cam
@@ -323,12 +330,11 @@ bool update(float delta_time) {
 	}
 
 	//sphere manipulation maths
-	time_total += delta_time;
 	
-	transform_spheres(delta_time, &sphereRing);
-	transform_spheres(delta_time, &sphereRing2);
-	transform_spheres(delta_time, &sphereRing3);
-	transform_spheres(delta_time, &sphereRing4);
+	transform_spheres(delta_time, time_total, &sphereRing);
+	transform_spheres(delta_time, time_total, &sphereRing2);
+	transform_spheres(delta_time, time_total, &sphereRing3);
+	transform_spheres(delta_time, time_total, &sphereRing4);
 
 	sphereRing["sphere0"].get_transform().orientation = (rotate(quat(), delta_time / 2.0f, vec3(1.0f, 0.0f, 0.0f)) * sphereRing["sphere0"].get_transform().orientation);
 
