@@ -16,6 +16,6 @@ void main() {
 	gl_Position = MVP * vec4(position, 1.0f);
 
 	world_pos = (M * vec4(position, 1.0f)).xyz;
-	trans_normal = N * normal;
+	trans_normal = normalize(N * normal);
 	tex_coord_frag = tex_coord_vert;
 }

@@ -14,14 +14,14 @@ map<mesh*, texture*> texs;
 map<mesh*, mesh*> meshHierarchy;
 directional_light dLight;
 point_light pLight;
-spot_light sLight; 
+spot_light sLight;
 texture tex;
 effect eff;
 target_camera target_c;
 free_camera free_c;
 uint cam_state = 0;
 double mouse_x;
-double mouse_y;  
+double mouse_y;
 
 //focus the free cam on a target location
 void freeCamHelp(vec3 target) {
@@ -55,7 +55,7 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 	(*sphereStructure)["sphere0"].get_material().set_shininess(25.0f);
 	(*sphereStructure)["sphere0"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	// Add relevant data to other maps
-	texs[&(*sphereStructure)["sphere0"]] = &tex; 
+	texs[&(*sphereStructure)["sphere0"]] = &tex;
 	//(*sphereHierarchy)["sphere0"] = "parent";
 	meshHierarchy[&(*sphereStructure)["sphere0"]] = nullptr;
 
@@ -90,12 +90,12 @@ bool load_content() {
 	skyBox = mesh(geometry_builder().create_box(vec3(200.0f)));
 	skyBox.get_material().set_emissive(vec4(0.2f, 0.2f, 0.2f, 1.0f));
 	texs[&skyBox] = &tex;
-	  
+
 	//sphereRing["parent"] = mesh(geometry_builder().create_plane());
 	//sphereRing["plane"] = mesh(geometry_builder().create_plane());
 	//sphereRing["plane"].get_transform().translate(vec3(0.0f, -1.0f, 0.0f));
 
-	makeSphereStructure(&sphereRing, 30.0f);
+	makeSphereStructure(&sphereRing, 200.0f);
 	makeSphereStructure(&sphereRing2, 30.0f);
 	makeSphereStructure(&sphereRing3, 15.0f);
 	makeSphereStructure(&sphereRing4, 25.0f);
@@ -111,24 +111,31 @@ bool load_content() {
 	sphereRing4["sphere0"].get_transform().scale = vec3(0.3f);
 	//meshHierarchy[&sphereRing4["sphere0"]] = &sphereRing["sphere0"];
 
-	//meshHierarchy[&skyBox] = &sphereRing["sphere0"]; <------------- motion sickness can be found here
+	//meshHierarchy[&skyBox] = &sphereRing["sphere0"]; //<------------- motion sickness can be found here
 	// Set point light properties
 	pLight.move(vec3(0.0f, 10.0f, 10.0f));
 	pLight.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	pLight.set_range(20.0f);
+	pLight.set_range(20.0f); 
 	// Set directional light properties
-	dLight.set_ambient_intensity(vec4(0.2f, 0.0f, 0.0f, 1.0f));
-	dLight.set_direction(normalize(vec3(0.0f, 1.0f, 0.0f))); 
+	dLight.set_ambient_intensity(vec4(0.0f, 0.2f, 0.0f, 1.0f));     
+	dLight.set_direction(normalize(vec3(0.0f, 1.0f, 0.0f)));
 	dLight.set_light_colour(vec4(0.0f, 1.0f, 1.0f, 1.0f));
-	 
+	// Set spot light properties
+	sLight.set_direction(normalize(vec3(1.0f, -0.5f, 0.0f)));
+	sLight.set_position(vec3(-20.0f, 5.0f, 0.0f));
+	sLight.set_light_colour(vec4(1.0f, 8.0f, 0.1f, 1.0f));
+	sLight.set_range(100.0f);
+
 	// Load in shaders
 	eff.add_shader("shaders/coursework.vert", GL_VERTEX_SHADER);
-	eff.add_shader("shaders/coursework.frag", GL_FRAGMENT_SHADER);
+	vector<string> frags{ "shaders/coursework.frag", "shaders/directional.frag",
+		"shaders/point.frag", "shaders/spot.frag" };
+	eff.add_shader(frags, GL_FRAGMENT_SHADER);
 	// Build effect
 	eff.build();
 
 
-	 
+
 	// Set target camera properties 
 	target_c.set_position(vec3(0.0f, 20.0f, 20.0f));
 	target_c.set_target(vec3(0.0f, 0.0f, 0.0f));
@@ -235,7 +242,7 @@ void free_manipulation(float delta_time) {
 	}
 	//looks at the origin
 	if ((glfwGetKey(renderer::get_window(), GLFW_KEY_O) == GLFW_PRESS)) {
-		freeCamHelp(vec3(0.0f,0.0f,0.0f));
+		freeCamHelp(vec3(0.0f, 0.0f, 0.0f));
 	}
 
 	//if movement has occured, normalize the movement, then multiply speed
@@ -259,13 +266,13 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 	//360 degrees. Shouldn't edit
 	float full_circle = two_pi<float>();
 	//sphere wave variable manipulation
-	float waves_per_circle = 10.0f;	//number of sin waves in the vertical
-	float wibble_speed = 2.0f;		//speed at which the spheres travel the sin arc
-	float amplitude = half_pi<float>();			//radians around z axis (pi/2 goes to poles)
+	float waves_per_circle = 3.0f;	//number of sin waves in the vertical
+	float wibble_speed = 0.2f;		//speed at which the spheres travel the sin arc
+	float amplitude = pi<float>();			//radians around z axis (pi/2 goes to poles)
 	float circling_speed = 1.0f;	//radians per second
 	//ring radius transformations
-	float waves_per_ring = 2.0f;	//number of sin waves in the horizontal
-	float change = 0.4f;			// percentage the radius fluctuates by
+	float waves_per_ring = 14.0f;	//number of sin waves in the horizontal 
+	float change = 0.6f;			// percentage the radius fluctuates by
 	float width_disable = 1.0f;		//0 for no radial fluctuation, 1 for regular radial fluctuation
 	float shrink_factor = spheres / (12.0f + spheres);
 
@@ -300,7 +307,7 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 		0.0f,
 		0.0f);*/
 
-	//rotate centre (parent) sphere
+		//rotate centre (parent) sphere
 	(*sphere_structure)["sphere0"].get_transform().rotate(eulerAngleY(delta_time * circling_speed));
 }
 
@@ -335,13 +342,13 @@ bool update(float delta_time) {
 	}
 
 	//sphere manipulation maths
-	
+
 	transform_spheres(delta_time, time_total, &sphereRing);
 	transform_spheres(delta_time, time_total, &sphereRing2);
 	transform_spheres(delta_time, time_total, &sphereRing3);
 	transform_spheres(delta_time, time_total, &sphereRing4);
 
-	sphereRing["sphere0"].get_transform().orientation = (rotate(quat(), delta_time / 2.0f, vec3(1.0f, 0.0f, 0.0f)) * sphereRing["sphere0"].get_transform().orientation);
+	//sphereRing["sphere0"].get_transform().orientation = (rotate(quat(), delta_time / 2.0f, vec3(1.0f, 0.0f, 0.0f)) * sphereRing["sphere0"].get_transform().orientation);
 
 	return true;
 }
@@ -380,7 +387,7 @@ void renderCams(mat4 &V, mat4 &P) {
 	}
 }
 //Render a map of spheres
-void renderSpheres(map<string, mesh> *sphereStructure,	mat4 V, mat4 P) {
+void renderSpheres(map<string, mesh> *sphereStructure, mat4 V, mat4 P) {
 	mat4 M;
 	mat4 MVP;
 	mat3 N;
@@ -396,7 +403,7 @@ void renderSpheres(map<string, mesh> *sphereStructure,	mat4 V, mat4 P) {
 		glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 		glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(N));
 
-		//bind the texture which shares the name of the mesh
+		//bind the texture which shares the name of the mesh 
 		renderer::bind(*texs[currentMesh], 0);
 		glUniform1i(eff.get_uniform_location("tex"), 0);
 		//bind material
@@ -413,7 +420,8 @@ bool render() {
 	//bind light
 	renderer::bind(pLight, "point");
 	renderer::bind(dLight, "direct");
-
+	renderer::bind(sLight, "spot");
+	 
 	mat4 M;
 	mat4 V;
 	mat4 P;
