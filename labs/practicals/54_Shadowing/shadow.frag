@@ -58,16 +58,16 @@ layout(location = 0) out vec4 colour;
 void main() {
   // *********************************
   // Calculate shade factor
-	vec3 proj_coords = (vertex_light.xyz/vertexlight.w);
+	float shade_fac = calculate_shadow(shadow_map, vertex_light);
   // Calculate view direction, normalize it
-
+	vec3 view_dir = normalize(eye_pos - vertex_position);
   // Sample texture
-
+	vec4 tex_col = texture(tex, tex_coord_out);
   // Calculate spot light
-
+	colour = calculate_spot(spot, mat, vertex_position, transformed_normal, view_dir, tex_col);
   // Scale colour by shade
-
+	colour *= shade_fac;
   //Ensure alpha is 1.0
-
+	colour.a = 1.0;
   // *********************************
 }

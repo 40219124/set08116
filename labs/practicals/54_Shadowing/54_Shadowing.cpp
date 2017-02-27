@@ -28,7 +28,7 @@ bool load_content() {
 	// *********************************
 
 	// Load texture
-	tex = texture("textures/check_1.gif");
+	tex = texture("textures/check_1.png");
 
 	// ***********************
 	// Set materials
@@ -93,14 +93,14 @@ bool update(float delta_time) {
 	}
 	if (glfwGetKey(renderer::get_window(), '4')) {
 		cam.set_position(vec3(-50, 2.0, 0));
-	}
+	} 
 	cam.update(delta_time);
 
 	// *********************************
 	// Update the shadow map light_position from the spot light
 	shadow.light_position = spot.get_position();
 	// do the same for light_dir property
-	shadow.light_position = spot.get_direction();
+	shadow.light_dir = spot.get_direction();
 	// *********************************
 
 	// Press s to save
@@ -135,7 +135,7 @@ bool render() {
 		// *********************************
 		// View matrix taken from shadow map
 		mat4 V = shadow.get_view();
-		// *********************************
+		// *********************************  
 		auto MVP = LightProjectionMat * V * M;
 		// Set MVP matrix uniform
 		glUniformMatrix4fv(shadow_eff.get_uniform_location("MVP"), // Location of uniform
@@ -154,7 +154,8 @@ bool render() {
 
 	// Bind shader
 	renderer::bind(main_eff);
-
+	  
+  
 	// Render meshes
 	for (auto &e : meshes) {
 		auto m = e.second;
@@ -168,7 +169,7 @@ bool render() {
 			1,                                    // Number of values - 1 mat4
 			GL_FALSE,                             // Transpose the matrix?
 			value_ptr(MVP));                      // Pointer to matrix data
-// Set M matrix uniform
+		// Set M matrix uniform
 		glUniformMatrix4fv(main_eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 		// Set N matrix uniform
 		glUniformMatrix3fv(main_eff.get_uniform_location("N"), 1, GL_FALSE,
@@ -176,29 +177,29 @@ bool render() {
 		// *********************************
 		// Set lightMVP uniform, using:
 		 //Model matrix from m
-
+		mat4 lightMVP = M;
 		// viewmatrix from the shadow map
-
+		lightMVP = shadow.get_view() * lightMVP;
 		// Multiply together with LightProjectionMat
-
+		lightMVP = LightProjectionMat * lightMVP; 
 		// Set uniform
-
+		glUniformMatrix4fv(main_eff.get_uniform_location("lightMVP"), 1, GL_FALSE, value_ptr(lightMVP));
 		// Bind material
-
+		renderer::bind(m.get_material(), "mat");
 		// Bind spot light
-
+		renderer::bind(spot, "spot");
 		// Bind texture
-
+		renderer::bind(tex, 0);
 		// Set tex uniform
-
+		glUniform1i(main_eff.get_uniform_location("tex"), 0);
 		// Set eye position
-
+		glUniform3fv(main_eff.get_uniform_location("eye_pos"), 1, value_ptr(cam.get_position()));
 		// Bind shadow map texture - use texture unit 1
-
+		renderer::bind(shadow.buffer->get_depth(), 1);
 		// Set the shadow_map uniform
-
+		glUniform1i(main_eff.get_uniform_location("shadow_map"), 1);
 		// Render mesh
-
+		renderer::render(m);
 		// *********************************
 	}
 
