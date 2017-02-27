@@ -59,7 +59,7 @@ bool load_content() {
 	shadow_eff.build();
 
 	// Set camera properties
-	cam.set_position(vec3(0.0f, 20.0f, -30.0f));
+	cam.set_position(vec3(0.0f, 20.0f, 30.0f));
 	cam.set_target(vec3(0.0f, 0.0f, 0.0f));
 	cam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 	return true;
@@ -89,11 +89,11 @@ bool update(float delta_time) {
 bool render() {
 	// *********************************
 	// Set render target to shadow map
-
+	renderer::set_render_target(shadow);
 	// Clear depth buffer bit
-
+	glClear(GL_DEPTH_BUFFER_BIT);
 	// Set face cull mode to front
-
+	glCullFace(GL_FRONT);
 	// *********************************
 
 	// Bind shader
@@ -106,7 +106,7 @@ bool render() {
 		auto M = m.get_transform().get_transform_matrix();
 		// *********************************
 		// View matrix taken from shadow map
-
+		mat4 V = shadow.get_view();
 		// *********************************
 
 		auto P = cam.get_projection();
@@ -119,9 +119,9 @@ bool render() {
 
 	// *********************************
 	// Set render target back to the screen
-
+	renderer::set_render_target();
 	// Set face cull mode to back
-
+	glCullFace(GL_BACK);
 	// *********************************
 
 	return true;
