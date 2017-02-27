@@ -114,16 +114,16 @@ bool load_content() {
 	//meshHierarchy[&skyBox] = &sphereRing["sphere0"]; //<------------- motion sickness can be found here
 	// Set point light properties
 	pLight.move(vec3(0.0f, 10.0f, 10.0f));
-	pLight.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	pLight.set_range(20.0f); 
+	pLight.set_light_colour(vec4(1.0f, 0.6f, 1.0f, 1.0f));
+	pLight.set_range(30.0f); 
 	// Set directional light properties
-	dLight.set_ambient_intensity(vec4(0.0f, 0.2f, 0.0f, 1.0f));     
+	dLight.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));     
 	dLight.set_direction(normalize(vec3(0.0f, 1.0f, 0.0f)));
-	dLight.set_light_colour(vec4(0.0f, 1.0f, 1.0f, 1.0f));
+	dLight.set_light_colour(vec4(0.6f, 0.6f, 0.6, 1.0f));
 	// Set spot light properties
 	sLight.set_direction(normalize(vec3(1.0f, -0.5f, 0.0f)));
 	sLight.set_position(vec3(-20.0f, 5.0f, 0.0f));
-	sLight.set_light_colour(vec4(1.0f, 8.0f, 0.1f, 1.0f));
+	sLight.set_light_colour(vec4(0.8f, 0.7f, 0.1f, 1.0f));
 	sLight.set_range(100.0f);
 
 	// Load in shaders
