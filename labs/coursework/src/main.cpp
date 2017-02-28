@@ -22,6 +22,7 @@ spot_light sLight;
 shadow_map shadow;
 // Texture
 texture tex;
+texture shadowMap;
 // Effects
 effect eff;
 effect sheff;
@@ -116,10 +117,10 @@ bool load_content() {
 	texs[&skyBox] = &tex;
 
 	// Make various sphere structures
-	makeSphereStructure(&sphereRing, 90.0f);
-	makeSphereStructure(&sphereRing2, 30.0f);
-	makeSphereStructure(&sphereRing3, 15.0f);
-	makeSphereStructure(&sphereRing4, 25.0f);
+	makeSphereStructure(&sphereRing, 10.0f);
+	makeSphereStructure(&sphereRing2, 10.0f);
+	makeSphereStructure(&sphereRing3, 10.0f);
+	makeSphereStructure(&sphereRing4, 10.0f);
 
 	// Set information for the second sphere ring
 	sphereRing2["sphere0"].get_transform().translate(vec3(40.0f, 20.0f, 30.0f));
@@ -148,8 +149,8 @@ bool load_content() {
 	dLight.set_direction(normalize(vec3(0.0f, 1.0f, 0.0f)));
 	dLight.set_light_colour(vec4(0.6f, 0.6f, 0.6, 1.0f));
 	// Set spot light properties
-	sLight.set_direction(normalize(vec3(1.0f, -0.5f, 0.0f)));
-	sLight.set_position(vec3(-20.0f, 5.0f, 0.0f));
+	sLight.set_direction(normalize(vec3(1.0f, -0.0f, 0.0f)));
+	sLight.set_position(vec3(-20.0f, 0.0f, 0.0f));
 	sLight.set_light_colour(vec4(0.8f, 0.7f, 0.1f, 1.0f));
 	sLight.set_range(100.0f);
 
@@ -159,11 +160,11 @@ bool load_content() {
 	// Load in shaders
 	eff.add_shader("shaders/coursework.vert", GL_VERTEX_SHADER);
 	vector<string> frags{ "shaders/coursework.frag", "shaders/directional.frag",
-		"shaders/point.frag", "shaders/spot.frag" };
+		"shaders/point.frag", "shaders/spot.frag", "shaders/shadow.frag" };
 	eff.add_shader(frags, GL_FRAGMENT_SHADER);
 	// Build effect
 	eff.build();
-
+	    
 	// Load in shadow shaders
 	sheff.add_shader("shaders/coursework.vert", GL_VERTEX_SHADER);
 	sheff.add_shader(frags, GL_FRAGMENT_SHADER);
@@ -293,6 +294,8 @@ void free_manipulation(float delta_time) {
 }
 //transform the spheres in a sphere map
 void transform_spheres(float delta_time, float time_total, map<string, mesh> *sphere_structure) {
+	/*delta_time = 0.0f;
+	time_total = 0.0f;*/
 	//string to mathematically aquire spheres
 	string name;
 	//the number of sphereRing -1
@@ -348,7 +351,7 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 
 bool update(float delta_time) {
 	//print fps
-	cout << 1.0f / delta_time << endl;
+	cout << 1.0f / delta_time << endl; 
 	// Cumulative total of time
 	static float time_total = 0.0f;
 	time_total += delta_time;
@@ -435,6 +438,9 @@ void renderSpheres(map<string, mesh> *sphereStructure, mat4 V, mat4 P) {
 	mat4 M;
 	mat4 MVP;
 	mat3 N;
+	mat4 lV, lP;
+	lV = shadow.get_view();
+	lP = perspective<float>(half_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 	for (pair<const string, mesh> &item : *sphereStructure) {
 		// get the hierarchy of transformations associated with the object
 		mesh* currentMesh = &item.second;
@@ -446,9 +452,13 @@ void renderSpheres(map<string, mesh> *sphereStructure, mat4 V, mat4 P) {
 		glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 		glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 		glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(N));
+		glUniformMatrix4fv(eff.get_uniform_location("lMVP"), 1, GL_FALSE, value_ptr(lP * (lV * M)));   
 		//bind the texture
 		renderer::bind(*texs[currentMesh], 0);
 		glUniform1i(eff.get_uniform_location("tex"), 0);
+		// Bind the shadow
+		renderer::bind(shadowMap, 1);
+		glUniform1i(eff.get_uniform_location("shadow_map"), 1);
 		//bind material
 		renderer::bind((*currentMesh).get_material(), "mat");
 		// Render geometry
@@ -465,7 +475,6 @@ bool render() {
 	mat3 N;
 
 	// Shadows!!!------------------------------------
-	
 	renderer::set_render_target(shadow);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glCullFace(GL_FRONT);
@@ -478,15 +487,31 @@ bool render() {
 	for (pair<const string, mesh> &item : sphereRing) {
 		mesh* m = &item.second;
 		transformHierarchy(m, lM, lN);
-		M = m->get_transform().get_transform_matrix();
-		glUniformMatrix4fv(sheff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(lP*(lV*M)));
+		glUniformMatrix4fv(sheff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(lP*(lV*lM)));
+		renderer::render(*m);
+	}
+	for (pair<const string, mesh> &item : sphereRing2) {
+		mesh* m = &item.second;
+		transformHierarchy(m, lM, lN);
+		glUniformMatrix4fv(sheff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(lP*(lV*lM)));
+		renderer::render(*m);
+	}
+	for (pair<const string, mesh> &item : sphereRing3) {
+		mesh* m = &item.second;
+		transformHierarchy(m, lM, lN);
+		glUniformMatrix4fv(sheff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(lP*(lV*lM)));
+		renderer::render(*m);
+	}
+	for (pair<const string, mesh> &item : sphereRing4) {
+		mesh* m = &item.second;
+		transformHierarchy(m, lM, lN);
+		glUniformMatrix4fv(sheff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(lP*(lV*lM)));
 		renderer::render(*m);
 	}
 	
 	renderer::set_render_target();
 	glCullFace(GL_BACK);
-	
-
+	shadowMap = shadow.buffer->get_depth();
 	// stop shadows!!!-------------------------------
 
 	// Bind effect
@@ -505,10 +530,13 @@ bool render() {
 	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 	glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(skyBox.get_transform().get_normal_matrix()));
+	glUniformMatrix4fv(eff.get_uniform_location("lMVP"), 1, GL_FALSE, value_ptr(lP * (lV * M)));
 	//Bind material and texture
 	renderer::bind(skyBox.get_material(), "mat");
 	renderer::bind(*texs[&skyBox], 0);
 	glUniform1i(eff.get_uniform_location("tex"), 0);
+	renderer::bind(shadowMap, 1);
+	glUniform1i(eff.get_uniform_location("shadow_map"), 1);
 	//Show from inside
 	glDisable(GL_CULL_FACE);
 	renderer::render(skyBox);
