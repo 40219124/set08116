@@ -5,21 +5,32 @@ using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
+// Meshes
 map<string, mesh> sphereRing;
 map<string, mesh> sphereRing2;
 map<string, mesh> sphereRing3;
 map<string, mesh> sphereRing4;
 mesh skyBox;
+// Reference maps
 map<mesh*, texture*> texs;
 map<mesh*, mesh*> meshHierarchy;
+// Lights
 directional_light dLight;
 point_light pLight;
 spot_light sLight;
+// Shadows
+shadow_map shadow;
+// Texture
 texture tex;
+// Effects
 effect eff;
+effect sheff;
+// Cameras
 target_camera target_c;
 free_camera free_c;
+// camera boolean
 uint cam_state = 0;
+// Mouse positions
 double mouse_x;
 double mouse_y;
 
@@ -99,37 +110,41 @@ bool load_content() {
 	// Loads in a texture   
 	tex = texture("textures/check_1.png");
 
+	// Make sky box mesh and give details
 	skyBox = mesh(geometry_builder().create_box(vec3(200.0f)));
 	skyBox.get_material().set_emissive(vec4(0.2f, 0.2f, 0.2f, 1.0f));
 	texs[&skyBox] = &tex;
 
-	//sphereRing["parent"] = mesh(geometry_builder().create_plane());
-	//sphereRing["plane"] = mesh(geometry_builder().create_plane());
-	//sphereRing["plane"].get_transform().translate(vec3(0.0f, -1.0f, 0.0f));
-
-	makeSphereStructure(&sphereRing, 200.0f);
+	// Make various sphere structures
+	makeSphereStructure(&sphereRing, 90.0f);
 	makeSphereStructure(&sphereRing2, 30.0f);
 	makeSphereStructure(&sphereRing3, 15.0f);
 	makeSphereStructure(&sphereRing4, 25.0f);
 
+	// Set information for the second sphere ring
 	sphereRing2["sphere0"].get_transform().translate(vec3(40.0f, 20.0f, 30.0f));
 	sphereRing2["sphere0"].get_transform().rotate(rotate(quat(), half_pi<float>(), vec3(1.0f, 0.0f, 0.0f)));
 	sphereRing2["sphere0"].get_transform().scale = vec3(0.5f);
 	//meshHierarchy[&sphereRing2["sphere0"]] = &sphereRing["sphere0"];
+
+	// Set information for the third sphere ring
 	sphereRing3["sphere0"].get_transform().translate(vec3(40.0f, 0.0f, -30.0f));
 	sphereRing3["sphere0"].get_transform().scale = vec3(0.8f);
 	//meshHierarchy[&sphereRing3["sphere0"]] = &sphereRing["sphere0"];
+
+	// Set information for the fourth sphere ring
 	sphereRing4["sphere0"].get_transform().translate(vec3(-40.0f, -20.0f, -30.0f));
 	sphereRing4["sphere0"].get_transform().scale = vec3(0.3f);
 	//meshHierarchy[&sphereRing4["sphere0"]] = &sphereRing["sphere0"];
 
 	//meshHierarchy[&skyBox] = &sphereRing["sphere0"]; //<------------- motion sickness can be found here
+
 	// Set point light properties
 	pLight.move(vec3(0.0f, 10.0f, 10.0f));
 	pLight.set_light_colour(vec4(1.0f, 0.6f, 1.0f, 1.0f));
-	pLight.set_range(30.0f); 
+	pLight.set_range(30.0f);
 	// Set directional light properties
-	dLight.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));     
+	dLight.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
 	dLight.set_direction(normalize(vec3(0.0f, 1.0f, 0.0f)));
 	dLight.set_light_colour(vec4(0.6f, 0.6f, 0.6, 1.0f));
 	// Set spot light properties
@@ -137,6 +152,9 @@ bool load_content() {
 	sLight.set_position(vec3(-20.0f, 5.0f, 0.0f));
 	sLight.set_light_colour(vec4(0.8f, 0.7f, 0.1f, 1.0f));
 	sLight.set_range(100.0f);
+
+	// Set shadow properties
+	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
 
 	// Load in shaders
 	eff.add_shader("shaders/coursework.vert", GL_VERTEX_SHADER);
@@ -146,7 +164,10 @@ bool load_content() {
 	// Build effect
 	eff.build();
 
-
+	// Load in shadow shaders
+	sheff.add_shader("shaders/coursework.vert", GL_VERTEX_SHADER);
+	sheff.add_shader(frags, GL_FRAGMENT_SHADER);
+	sheff.build();
 
 	// Set target camera properties 
 	target_c.set_position(vec3(0.0f, 20.0f, 20.0f));
@@ -321,7 +342,7 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 		0.0f,
 		0.0f);*/
 
-	//rotate centre (parent) sphere
+		//rotate centre (parent) sphere
 	(*sphere_structure)["sphere0"].get_transform().rotate(eulerAngleY(delta_time * circling_speed));
 }
 
@@ -362,6 +383,12 @@ bool update(float delta_time) {
 	// Rotate the central sphere on the x axis
 	//sphereRing["sphere0"].get_transform().orientation = (rotate(quat(), delta_time / 2.0f, vec3(1.0f, 0.0f, 0.0f)) * sphereRing["sphere0"].get_transform().orientation);
 
+	shadow.light_position = sLight.get_position();
+	shadow.light_dir = sLight.get_direction();
+
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_9)) {
+		shadow.buffer->save("shadow_map.png"); 
+	}
 	return true;
 }
 // Aquire the transformation matrix of a child object
@@ -430,19 +457,44 @@ void renderSpheres(map<string, mesh> *sphereStructure, mat4 V, mat4 P) {
 }
 
 bool render() {
-	// Bind effect
-	renderer::bind(eff);
-	//bind light
-	renderer::bind(pLight, "point");
-	renderer::bind(dLight, "direct");
-	renderer::bind(sLight, "spot");
-	
 	//Declare matrices
 	mat4 M;
 	mat4 V;
 	mat4 P;
 	mat4 MVP;
 	mat3 N;
+
+	// Shadows!!!------------------------------------
+	
+	renderer::set_render_target(shadow);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glCullFace(GL_FRONT);
+	renderer::bind(sheff);
+
+	mat4 lM, lV, lP, lMVP;    
+	lV = shadow.get_view();
+	lP = perspective<float>(half_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
+	mat3 lN;
+	for (pair<const string, mesh> &item : sphereRing) {
+		mesh* m = &item.second;
+		transformHierarchy(m, lM, lN);
+		M = m->get_transform().get_transform_matrix();
+		glUniformMatrix4fv(sheff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(lP*(lV*M)));
+		renderer::render(*m);
+	}
+	
+	renderer::set_render_target();
+	glCullFace(GL_BACK);
+	
+
+	// stop shadows!!!-------------------------------
+
+	// Bind effect
+	renderer::bind(eff);
+	//bind light
+	renderer::bind(pLight, "point");
+	renderer::bind(dLight, "direct");
+	renderer::bind(sLight, "spot");
 	//Get camera information
 	renderCams(V, P);
 

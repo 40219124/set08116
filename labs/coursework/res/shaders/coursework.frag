@@ -1,4 +1,4 @@
-#version 440
+#version 450 
 
 #ifndef DIRECTIONAL_LIGHT
 #define DIRECTIONAL_LIGHT
@@ -59,6 +59,7 @@ uniform material mat;
 layout(location = 0) in vec3 world_pos;
 layout(location = 1) in vec3 trans_normal;
 layout(location = 2) in vec2 tex_coord_frag;
+//layout(location = 3) in vec3 light_pos;
 
 layout(location = 0) out vec4 colour;
 
