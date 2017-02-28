@@ -25,25 +25,37 @@ double mouse_y;
 
 //focus the free cam on a target location
 void freeCamHelp(vec3 target) {
+	// Vector to target = the normalised vector from the camera to the target position
 	target = normalize(target - free_c.get_position());
+	// Declare the "forward" direction
 	vec3 forward = vec3(0.0f, 0.0f, -1.0f);
-
+	// The projection of the target vector onto the x&z plane
 	vec3 targetxz = normalize(vec3(target.x, 0.0f, target.z));
+	// Cross product of forward and xz-projection
 	vec3 crossy = cross(forward, targetxz);
+	// Toggle for rotating clockwise/anti-clockwise
 	float yaw = 1.0f;
+	// If target is clockwise of forwards reverse yaw direction
 	if (crossy.y < 0) {
 		yaw *= -1.0f;
 	}
+	// Yaw = the inverse cosine of the dot product between forward and the xz-projection (multiplied by 1 or -1)
 	yaw *= acos(dot(forward, targetxz));
+	// Set camera yaw
 	free_c.set_yaw(yaw);
-
+	// Rotate the vector to be on the z plane
 	vec3 targetyz = rotate(quat(), -yaw, vec3(0.0f, 1.0f, 0.0f)) * target;
+	// Cross product of forward and rotated vector
 	vec3 crossx = cross(forward, targetyz);
+	// Toggle for pitch up/down
 	float pitch = 1.0f;
+	// If forward is above the rotated vector
 	if (crossx.x < 0) {
 		pitch *= -1.0f;
 	}
+	// Pitch = the inverse cosine of the dot product between forward and the rotated vector (multiplied by 1 or -1)
 	pitch *= acos(dot(forward, targetyz));
+	// Set camera pitch
 	free_c.set_pitch(pitch);
 }
 //make a map of spheres
@@ -54,13 +66,13 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 	(*sphereStructure)["sphere0"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
 	(*sphereStructure)["sphere0"].get_material().set_shininess(25.0f);
 	(*sphereStructure)["sphere0"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	// Add relevant data to other maps
+	// Add texture map information
 	texs[&(*sphereStructure)["sphere0"]] = &tex;
-	//(*sphereHierarchy)["sphere0"] = "parent";
+	// Set hierarchy pair to be a null pointer
 	meshHierarchy[&(*sphereStructure)["sphere0"]] = nullptr;
 
+	// Pointer to use in loop
 	mesh *sphere;
-
 	//loop to generate x amount of spheres
 	for (int i = 0; i < sphereCount; ++i) {
 		//creates an index for the map
@@ -150,7 +162,9 @@ bool load_content() {
 }
 
 bool initialise() {
+	// Get starting mouse position
 	glfwGetCursorPos(renderer::get_window(), &mouse_x, &mouse_y);
+	// Disable cursor on screen
 	glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	return true;
@@ -176,11 +190,11 @@ void target_manipulation(float delta_time) {
 	}
 	//zoom in on plus key
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_EQUAL)) {
-		target_c.set_position(target_c.get_target() - (1 - 0.2f * delta_time) * (target_c.get_target() - target_c.get_position()));
+		target_c.set_position(target_c.get_target() - (1 - 0.4f * delta_time) * (target_c.get_target() - target_c.get_position()));
 	}
 	//zoon out on minus key
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_MINUS)) {
-		target_c.set_position(target_c.get_target() - (1 + 0.25f * delta_time) * (target_c.get_target() - target_c.get_position()));
+		target_c.set_position(target_c.get_target() - (1 + 0.7f * delta_time) * (target_c.get_target() - target_c.get_position()));
 	}
 	//update camera
 	target_c.update(delta_time);
@@ -224,13 +238,13 @@ void free_manipulation(float delta_time) {
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_D)) {
 		mov += vec3(1.0f, 0.0f, 0.0f);
 	}
-	//down
-	if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT_SHIFT)) {
-		mov += vec3(0.0f, -1.0f, 0.0f);
-	}
 	//up
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_SPACE)) {
 		mov += vec3(0.0f, 1.0f, 0.0f);
+	}
+	//down
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT_SHIFT)) {
+		mov += vec3(0.0f, -1.0f, 0.0f);
 	}
 	//speed up
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT_CONTROL)) {
@@ -275,8 +289,9 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 	float change = 0.6f;			// percentage the radius fluctuates by
 	float width_disable = 1.0f;		//0 for no radial fluctuation, 1 for regular radial fluctuation
 	float shrink_factor = spheres / (12.0f + spheres);
-
+	// Radius of the ring
 	vec3 radius = vec3(13.0f, 0.0f, 0.0f);
+	// Variables to be used within loop
 	vec3 calculated_radius;
 	quat rotq;
 	float distFromO;
@@ -300,21 +315,20 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 		sphereRing[name].get_transform().position.z));*/
 		//---------------------------------------------------------------------
 	}
-
 	//to move the centre sphere from side to side
 	float centre_movement = 0.0f;
 	/*(*sphere_structure)["sphere0"].get_transform().position = vec3(centre_movement * sin(time_total),
 		0.0f,
 		0.0f);*/
 
-		//rotate centre (parent) sphere
+	//rotate centre (parent) sphere
 	(*sphere_structure)["sphere0"].get_transform().rotate(eulerAngleY(delta_time * circling_speed));
 }
 
 bool update(float delta_time) {
 	//print fps
 	cout << 1.0f / delta_time << endl;
-
+	// Cumulative total of time
 	static float time_total = 0.0f;
 	time_total += delta_time;
 	//which camera type to use
@@ -340,26 +354,28 @@ bool update(float delta_time) {
 		cam_state = 0;
 		break;
 	}
-
-	//sphere manipulation maths
-
+	// Transform the spheres in the various maps
 	transform_spheres(delta_time, time_total, &sphereRing);
 	transform_spheres(delta_time, time_total, &sphereRing2);
 	transform_spheres(delta_time, time_total, &sphereRing3);
 	transform_spheres(delta_time, time_total, &sphereRing4);
-
+	// Rotate the central sphere on the x axis
 	//sphereRing["sphere0"].get_transform().orientation = (rotate(quat(), delta_time / 2.0f, vec3(1.0f, 0.0f, 0.0f)) * sphereRing["sphere0"].get_transform().orientation);
 
 	return true;
 }
 // Aquire the transformation matrix of a child object
 void transformHierarchy(mesh *currentMesh, mat4 &M, mat3 &N) {
+	//set M and N to be the matrices of the mesh in question
 	M = currentMesh->get_transform().get_transform_matrix();
 	N = currentMesh->get_transform().get_normal_matrix();
 	mesh *cMesh = meshHierarchy[currentMesh];
+	// while the acted on mesh (pointer) has a parent...
 	while (cMesh != nullptr) {
+		// multiply M and N by the matrices of the parent
 		M = cMesh->get_transform().get_transform_matrix() * M;
 		N = cMesh->get_transform().get_normal_matrix() * N;
+		// change the acted on mesh (use a different pointer)
 		cMesh = meshHierarchy[cMesh];
 	}
 }
@@ -388,27 +404,26 @@ void renderCams(mat4 &V, mat4 &P) {
 }
 //Render a map of spheres
 void renderSpheres(map<string, mesh> *sphereStructure, mat4 V, mat4 P) {
+	//Declare matrices
 	mat4 M;
 	mat4 MVP;
 	mat3 N;
 	for (pair<const string, mesh> &item : *sphereStructure) {
 		// get the hierarchy of transformations associated with the object
 		mesh* currentMesh = &item.second;
+		//Get hierarchy information for the object
 		transformHierarchy(currentMesh, M, N);
-
 		// Create MVP matrix
 		MVP = P * (V * M);
-		// Set MVP matrix uniform
+		// Set matrix uniforms
 		glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 		glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 		glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(N));
-
-		//bind the texture which shares the name of the mesh 
+		//bind the texture
 		renderer::bind(*texs[currentMesh], 0);
 		glUniform1i(eff.get_uniform_location("tex"), 0);
 		//bind material
 		renderer::bind((*currentMesh).get_material(), "mat");
-
 		// Render geometry
 		renderer::render(*currentMesh);
 	}
@@ -421,27 +436,34 @@ bool render() {
 	renderer::bind(pLight, "point");
 	renderer::bind(dLight, "direct");
 	renderer::bind(sLight, "spot");
-	 
+	
+	//Declare matrices
 	mat4 M;
 	mat4 V;
 	mat4 P;
 	mat4 MVP;
 	mat3 N;
-	transformHierarchy(&skyBox, M, N);
+	//Get camera information
 	renderCams(V, P);
+
+	//render skybox
+	transformHierarchy(&skyBox, M, N);
 	MVP = P * (V * M);
+	//Bind matrices
 	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 	glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(skyBox.get_transform().get_normal_matrix()));
-
+	//Bind material and texture
 	renderer::bind(skyBox.get_material(), "mat");
 	renderer::bind(*texs[&skyBox], 0);
 	glUniform1i(eff.get_uniform_location("tex"), 0);
-
+	//Show from inside
 	glDisable(GL_CULL_FACE);
 	renderer::render(skyBox);
 	glEnable(GL_CULL_FACE);
+	//End skybox render
 
+	//Render the sphere meshes
 	renderSpheres(&sphereRing, V, P);
 	renderSpheres(&sphereRing2, V, P);
 	renderSpheres(&sphereRing3, V, P);
