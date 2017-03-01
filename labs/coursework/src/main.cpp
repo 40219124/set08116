@@ -432,55 +432,36 @@ void renderCams(mat4 &V, mat4 &P) {
 		break;
 	}
 }
-//Render a map of spheres
-void renderSpheres(map<string, mesh> *sphereStructure, mat4 V, mat4 P) {
-	//Declare matrices
-	mat4 M;
-	mat4 MVP;
+// Renders a mesh
+void renderObject(mesh *obj, const mat4 &V, const mat4 &P, const mat4 &lV, const mat4 &lP) {
+	mat4 M, MVP, lMVP;
 	mat3 N;
-	mat4 lV, lP;
-	lV = shadow.get_view();
-	lP = perspective<float>(half_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
-	for (pair<const string, mesh> &item : *sphereStructure) {
-		// get the hierarchy of transformations associated with the object
-		mesh* currentMesh = &item.second;
-		//Get hierarchy information for the object
-		transformHierarchy(currentMesh, M, N);
-		// Create MVP matrix
-		MVP = P * (V * M);
-		// Set matrix uniforms
-		glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-		glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
-		glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(N));
-		glUniformMatrix4fv(eff.get_uniform_location("lMVP"), 1, GL_FALSE, value_ptr(lP * (lV * M)));   
-		//bind the texture
-		renderer::bind(*texs[currentMesh], 0);
-		glUniform1i(eff.get_uniform_location("tex"), 0);
-		// Bind the shadow
-		renderer::bind(shadowMap, 1);
-		glUniform1i(eff.get_uniform_location("shadow_map"), 1);
-		//bind material
-		renderer::bind((*currentMesh).get_material(), "mat");
-		// Render geometry
-		renderer::render(*currentMesh);
-	}
+	transformHierarchy(obj, M, N);
+	MVP = P * (V * M);
+	lMVP = lP * (lV * M);
+	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
+	glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(N));
+	glUniformMatrix4fv(eff.get_uniform_location("lMVP"), 1, GL_FALSE, value_ptr(lMVP));
+	renderer::bind(*texs[obj], 0);
+	glUniform1i(eff.get_uniform_location("tex"), 0);
+	renderer::bind(obj->get_material(), "mat");
+
+	renderer::render(*obj);
 }
 
 bool render() {
 	//Declare matrices
-	mat4 M;
-	mat4 V;
-	mat4 P;
-	mat4 MVP;
+	mat4 M, V, P, MVP;
 	mat3 N;
+	mat4 lM, lV, lP, lMVP;  
 
 	// Shadows!!!------------------------------------
 	renderer::set_render_target(shadow);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glCullFace(GL_FRONT);
 	renderer::bind(sheff);
-
-	mat4 lM, lV, lP, lMVP;    
+  
 	lV = shadow.get_view();
 	lP = perspective<float>(half_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 	mat3 lN;
@@ -516,6 +497,9 @@ bool render() {
 
 	// Bind effect
 	renderer::bind(eff);
+	renderer::bind(shadowMap, 1);
+	glUniform1i(eff.get_uniform_location("shadow_map"), 1);
+
 	//bind light
 	renderer::bind(pLight, "point");
 	renderer::bind(dLight, "direct");
@@ -523,31 +507,25 @@ bool render() {
 	//Get camera information
 	renderCams(V, P);
 
-	//render skybox
-	transformHierarchy(&skyBox, M, N);
-	MVP = P * (V * M);
-	//Bind matrices
-	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
-	glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(skyBox.get_transform().get_normal_matrix()));
-	glUniformMatrix4fv(eff.get_uniform_location("lMVP"), 1, GL_FALSE, value_ptr(lP * (lV * M)));
-	//Bind material and texture
-	renderer::bind(skyBox.get_material(), "mat");
-	renderer::bind(*texs[&skyBox], 0);
-	glUniform1i(eff.get_uniform_location("tex"), 0);
-	renderer::bind(shadowMap, 1);
-	glUniform1i(eff.get_uniform_location("shadow_map"), 1);
 	//Show from inside
 	glDisable(GL_CULL_FACE);
-	renderer::render(skyBox);
+	renderObject(&skyBox, V, P, lV, lP);
 	glEnable(GL_CULL_FACE);
 	//End skybox render
 
 	//Render the sphere meshes
-	renderSpheres(&sphereRing, V, P);
-	renderSpheres(&sphereRing2, V, P);
-	renderSpheres(&sphereRing3, V, P);
-	renderSpheres(&sphereRing4, V, P);
+	for (pair<const string, mesh> &item : sphereRing) {
+		renderObject(&item.second, V, P, lV, lP);
+	}
+	for (pair<const string, mesh> &item : sphereRing2) {
+		renderObject(&item.second, V, P, lV, lP);
+	}
+	for (pair<const string, mesh> &item : sphereRing3) {
+		renderObject(&item.second, V, P, lV, lP);
+	}
+	for (pair<const string, mesh> &item : sphereRing4) {
+		renderObject(&item.second, V, P, lV, lP);
+	}
 	return true;
 }
 
