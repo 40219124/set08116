@@ -449,12 +449,21 @@ void renderObject(mesh *obj, const mat4 &V, const mat4 &P, const mat4 &lV, const
 
 	renderer::render(*obj);
 }
+// Renders the shadow buffer for a mesh
+void renderShadow(mesh *obj, const mat4 &lV, const mat4 &lP) {
+	mat4 M, MVP;
+	mat3 dc;
+	transformHierarchy(obj, M, dc);
+	MVP = lP * (lV * M);
+	glUniformMatrix4fv(sheff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	renderer::render(*obj);
+}
 
 bool render() {
 	//Declare matrices
 	mat4 M, V, P, MVP;
 	mat3 N;
-	mat4 lM, lV, lP, lMVP;  
+	mat4 lV, lP, lMVP;  
 
 	// Shadows!!!------------------------------------
 	renderer::set_render_target(shadow);
@@ -464,30 +473,17 @@ bool render() {
   
 	lV = shadow.get_view();
 	lP = perspective<float>(half_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
-	mat3 lN;
 	for (pair<const string, mesh> &item : sphereRing) {
-		mesh* m = &item.second;
-		transformHierarchy(m, lM, lN);
-		glUniformMatrix4fv(sheff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(lP*(lV*lM)));
-		renderer::render(*m);
+		renderShadow(&item.second, lV, lP);
 	}
 	for (pair<const string, mesh> &item : sphereRing2) {
-		mesh* m = &item.second;
-		transformHierarchy(m, lM, lN);
-		glUniformMatrix4fv(sheff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(lP*(lV*lM)));
-		renderer::render(*m);
+		renderShadow(&item.second, lV, lP);
 	}
 	for (pair<const string, mesh> &item : sphereRing3) {
-		mesh* m = &item.second;
-		transformHierarchy(m, lM, lN);
-		glUniformMatrix4fv(sheff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(lP*(lV*lM)));
-		renderer::render(*m);
+		renderShadow(&item.second, lV, lP);
 	}
 	for (pair<const string, mesh> &item : sphereRing4) {
-		mesh* m = &item.second;
-		transformHierarchy(m, lM, lN);
-		glUniformMatrix4fv(sheff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(lP*(lV*lM)));
-		renderer::render(*m);
+		renderShadow(&item.second, lV, lP);
 	}
 	
 	renderer::set_render_target();
