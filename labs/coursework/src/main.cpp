@@ -11,6 +11,7 @@ map<string, mesh> sphereRing2;
 map<string, mesh> sphereRing3;
 map<string, mesh> sphereRing4;
 mesh skyBox;
+mesh ground;
 // Reference maps
 map<mesh*, texture*> texs;
 map<mesh*, mesh*> meshHierarchy;
@@ -34,6 +35,8 @@ uint cam_state = 0;
 // Mouse positions
 double mouse_x;
 double mouse_y;
+// Disable skybox
+bool noSky = true;
 
 //focus the free cam on a target location
 void freeCamHelp(vec3 target) {
@@ -112,12 +115,19 @@ bool load_content() {
 	tex = texture("textures/check_1.png");
 
 	// Make sky box mesh and give details
-	skyBox = mesh(geometry_builder().create_box(vec3(200.0f)));
-	skyBox.get_material().set_emissive(vec4(0.2f, 0.2f, 0.2f, 1.0f));
-	texs[&skyBox] = &tex;
+	if (!noSky) {
+		/*skyBox = mesh(geometry_builder().create_box(vec3(200.0f)));
+		skyBox.get_material().set_emissive(vec4(0.2f, 0.2f, 0.2f, 1.0f));
+		texs[&skyBox] = &tex;*/
+	}
+
+	ground = mesh(geometry_builder().create_plane(200.0f, 200.0f));
+	ground.get_transform().translate(vec3(200.0f, 0.0f, 0.0f));
+	ground.get_transform().rotate(eulerAngleZ(half_pi<float>()));
+	texs[&ground] = &tex;
 
 	// Make various sphere structures
-	makeSphereStructure(&sphereRing, 10.0f);
+	makeSphereStructure(&sphereRing, 50.0f);
 	makeSphereStructure(&sphereRing2, 10.0f);
 	makeSphereStructure(&sphereRing3, 10.0f);
 	makeSphereStructure(&sphereRing4, 10.0f);
@@ -140,22 +150,28 @@ bool load_content() {
 
 	//meshHierarchy[&skyBox] = &sphereRing["sphere0"]; //<------------- motion sickness can be found here
 
-	// Set point light properties
-	pLight.move(vec3(0.0f, 10.0f, 10.0f));
-	pLight.set_light_colour(vec4(1.0f, 0.6f, 1.0f, 1.0f));
-	pLight.set_range(30.0f);
 	// Set directional light properties
+	bool dLightOn = true;
 	dLight.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
 	dLight.set_direction(normalize(vec3(0.0f, 1.0f, 0.0f)));
 	dLight.set_light_colour(vec4(0.6f, 0.6f, 0.6, 1.0f));
+	if (!dLightOn) {
+		dLight.set_ambient_intensity(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		dLight.set_light_colour(vec4(0.0f, 0.0f, 0.0, 1.0f));
+	}
+	// Set point light properties
+	bool pLightOn = false;
+	pLight.move(vec3(0.0f, 10.0f, 10.0f));
+	pLight.set_range(30.0f);
+	pLight.set_light_colour(vec4(1.0f, 0.6f, 1.0f, 1.0f));
+	if (!pLightOn) {
+		pLight.set_light_colour(vec4(0.0f, 0.0f, 0.0f, 0.0f));
+	}
 	// Set spot light properties
 	sLight.set_direction(normalize(vec3(1.0f, -0.0f, 0.0f)));
-	sLight.set_position(vec3(-20.0f, 0.0f, 0.0f));
+	sLight.set_position(vec3(-40.0f, 0.0f, 0.0f));
 	sLight.set_light_colour(vec4(0.8f, 0.7f, 0.1f, 1.0f));
 	sLight.set_range(100.0f);
-
-	// Set shadow properties
-	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
 
 	// Load in shaders
 	eff.add_shader("shaders/coursework.vert", GL_VERTEX_SHADER);
@@ -164,7 +180,10 @@ bool load_content() {
 	eff.add_shader(frags, GL_FRAGMENT_SHADER);
 	// Build effect
 	eff.build();
-	    
+
+	// Set shadow properties
+	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
+
 	// Load in shadow shaders
 	sheff.add_shader("shaders/coursework.vert", GL_VERTEX_SHADER);
 	sheff.add_shader(frags, GL_FRAGMENT_SHADER);
@@ -304,13 +323,13 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 	//360 degrees. Shouldn't edit
 	float full_circle = two_pi<float>();
 	//sphere wave variable manipulation
-	float waves_per_circle = 3.0f;	//number of sin waves in the vertical
-	float wibble_speed = 0.2f;		//speed at which the spheres travel the sin arc
-	float amplitude = pi<float>();			//radians around z axis (pi/2 goes to poles)
+	float waves_per_circle = 2.0f;	//number of sin waves in the vertical
+	float wibble_speed = 2.0f;		//speed at which the spheres travel the sin arc
+	float amplitude = 0.2f;			//radians around z axis (pi/2 goes to poles)
 	float circling_speed = 1.0f;	//radians per second
 	//ring radius transformations
-	float waves_per_ring = 14.0f;	//number of sin waves in the horizontal 
-	float change = 0.6f;			// percentage the radius fluctuates by
+	float waves_per_ring = 2.0f;	//number of sin waves in the horizontal 
+	float change = 0.2f;			// percentage the radius fluctuates by
 	float width_disable = 1.0f;		//0 for no radial fluctuation, 1 for regular radial fluctuation
 	float shrink_factor = spheres / (12.0f + spheres);
 	// Radius of the ring
@@ -351,7 +370,7 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 
 bool update(float delta_time) {
 	//print fps
-	cout << 1.0f / delta_time << endl; 
+	//cout << 1.0f / delta_time << endl;
 	// Cumulative total of time
 	static float time_total = 0.0f;
 	time_total += delta_time;
@@ -390,11 +409,22 @@ bool update(float delta_time) {
 	shadow.light_dir = sLight.get_direction();
 
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_9)) {
-		shadow.buffer->save("shadow_map.png"); 
+		shadow.buffer->save("shadow_map.png");
 	}
+
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT)) {
+		ground.get_transform().translate(vec3(delta_time * -20.0f, 0.0f, 0.0f));
+		cout << ground.get_transform().position.x << endl;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_RIGHT)) {
+		ground.get_transform().translate(vec3(delta_time * 20.0f, 0.0f, 0.0f));
+		cout << ground.get_transform().position.x << endl; 
+	}
+
+
 	return true;
 }
-// Aquire the transformation matrix of a child object
+// Aquire the transformation matrix of a child object 
 void transformHierarchy(mesh *currentMesh, mat4 &M, mat3 &N) {
 	//set M and N to be the matrices of the mesh in question
 	M = currentMesh->get_transform().get_transform_matrix();
@@ -463,14 +493,14 @@ bool render() {
 	//Declare matrices
 	mat4 M, V, P, MVP;
 	mat3 N;
-	mat4 lV, lP, lMVP;  
+	mat4 lV, lP, lMVP;
 
 	// Shadows!!!------------------------------------
 	renderer::set_render_target(shadow);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glCullFace(GL_FRONT);
 	renderer::bind(sheff);
-  
+
 	lV = shadow.get_view();
 	lP = perspective<float>(half_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 	for (pair<const string, mesh> &item : sphereRing) {
@@ -485,7 +515,8 @@ bool render() {
 	for (pair<const string, mesh> &item : sphereRing4) {
 		renderShadow(&item.second, lV, lP);
 	}
-	
+	renderShadow(&ground, lV, lP);
+
 	renderer::set_render_target();
 	glCullFace(GL_BACK);
 	shadowMap = shadow.buffer->get_depth();
@@ -503,12 +534,6 @@ bool render() {
 	//Get camera information
 	renderCams(V, P);
 
-	//Show from inside
-	glDisable(GL_CULL_FACE);
-	renderObject(&skyBox, V, P, lV, lP);
-	glEnable(GL_CULL_FACE);
-	//End skybox render
-
 	//Render the sphere meshes
 	for (pair<const string, mesh> &item : sphereRing) {
 		renderObject(&item.second, V, P, lV, lP);
@@ -522,6 +547,17 @@ bool render() {
 	for (pair<const string, mesh> &item : sphereRing4) {
 		renderObject(&item.second, V, P, lV, lP);
 	}
+
+	renderObject(&ground, V, P, lV, lP);
+
+	//Show from inside
+	if (!noSky) {
+		glDisable(GL_CULL_FACE);
+		//	renderObject(&skyBox, V, P, lV, lP);
+		glEnable(GL_CULL_FACE);
+	}
+	//End skybox render
+
 	return true;
 }
 

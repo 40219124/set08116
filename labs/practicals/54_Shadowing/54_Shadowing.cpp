@@ -26,6 +26,9 @@ bool load_content() {
 	// Scale the teapot - (0.1, 0.1, 0.1)
 	meshes["teapot"].get_transform().scale = vec3(0.1f,0.1f,0.1f);
 	// *********************************
+	meshes["cube"] = mesh(geometry_builder().create_box(vec3(200.0f)));
+	meshes["cube"].get_transform().translate(vec3(3.0f, 1.0f, -5.0f));
+	meshes["cube"].get_material().set_emissive(vec4(0.2f, 0.2f, 0.2f, 1.0f));
 
 	// Load texture
 	tex = texture("textures/check_1.png");
@@ -36,6 +39,9 @@ bool load_content() {
 	// - all specular is white
 	// - all shininess is 25
 	// ***********************
+	meshes["cube"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	meshes["cube"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	meshes["cube"].get_material().set_shininess(25.0f);
 	// White plane
 	meshes["plane"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
 	meshes["plane"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -199,7 +205,13 @@ bool render() {
 		// Set the shadow_map uniform
 		glUniform1i(main_eff.get_uniform_location("shadow_map"), 1);
 		// Render mesh
+		if (e.first == "cube") {
+			glDisable(GL_CULL_FACE);
+		}
 		renderer::render(m);
+		if (e.first == "cube") {
+			glEnable(GL_CULL_FACE);
+		}
 		// *********************************
 	}
 
