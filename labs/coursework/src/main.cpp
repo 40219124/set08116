@@ -587,13 +587,13 @@ bool render() {
 	renderer::bind(sLight, "spot");
 	//Get camera information
 	renderCams(V, P);
-	renderSimpleObject(&ground, V, P, lV, lP);
-	renderSimpleObject(&column, V, P, lV, lP);
+	renderObject(&ground, V, P, lV, lP);
+	renderObject(&column, V, P, lV, lP);
 
 
 	renderer::bind(simple_eff);
-	renderer::bind(shadowMap, 5);
-	glUniform1i(eff.get_uniform_location("shadow_map"), 5);
+	/*renderer::bind(shadowMap, 5);
+	glUniform1i(eff.get_uniform_location("shadow_map"), 5);*/
 	//bind light
 	/*renderer::bind(pLight, "point");
 	renderer::bind(dLight, "direct");
