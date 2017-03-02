@@ -133,7 +133,7 @@ bool load_content() {
 	ground = mesh(geometry_builder().create_plane(50.0f, 50.0f));
 	ground.get_transform().scale = vec3(4.0f);
 	ground.get_transform().translate(vec3(100.0f, 0.0f, 0.0f));
-	ground.get_transform().rotate(eulerAngleZ(half_pi<float>()));
+	ground.get_transform().rotate(eulerAngleZ(half_pi<float>()));  
 	texs[&ground] = &grass_tex;
 	norms[&ground] = &grass_norm;
 
@@ -590,14 +590,12 @@ bool render() {
 	renderObject(&ground, V, P, lV, lP);
 	renderObject(&column, V, P, lV, lP);
 
-
 	renderer::bind(simple_eff);
-	/*renderer::bind(shadowMap, 5);
-	glUniform1i(eff.get_uniform_location("shadow_map"), 5);*/
 	//bind light
-	/*renderer::bind(pLight, "point");
+	renderer::bind(pLight, "point");
 	renderer::bind(dLight, "direct");
-	renderer::bind(sLight, "spot");*/
+	renderer::bind(sLight, "spot");
+	glUniform1i(simple_eff.get_uniform_location("shadow_map"), 5);
 
 	//Render the sphere meshes
 	for (pair<const string, mesh> &item : sphereRing) {
