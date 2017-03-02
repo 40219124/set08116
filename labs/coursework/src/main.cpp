@@ -12,6 +12,7 @@ map<string, mesh> sphereRing3;
 map<string, mesh> sphereRing4;
 mesh skyBox;
 mesh ground;
+mesh hill;
 mesh column;
 // Reference maps
 map<mesh*, texture*> texs;
@@ -126,10 +127,14 @@ bool load_content() {
 	}
 
 	// Make the plane
-	ground = mesh(geometry_builder().create_plane(200.0f, 200.0f));
-	ground.get_transform().translate(vec3(200.0f, 0.0f, 0.0f));
+	static texture grass_tex = texture("textures/grass01.jpg");
+	static texture grass_norm = texture("textures/grass01_n.jpg");
+	ground = mesh(geometry_builder().create_plane(50.0f, 50.0f));
+	ground.get_transform().scale = vec3(4.0f);
+	ground.get_transform().translate(vec3(100.0f, 0.0f, 0.0f));
 	ground.get_transform().rotate(eulerAngleZ(half_pi<float>()));
-	texs[&ground] = &tex;
+	texs[&ground] = &grass_tex;
+	norms[&ground] = &grass_norm;
 
 	// Import the column
 	column = mesh(geometry("models/Column_HP.obj"));
@@ -494,6 +499,10 @@ void renderObject(mesh *obj, const mat4 &V, const mat4 &P, const mat4 &lV, const
 	glUniformMatrix4fv(eff.get_uniform_location("lMVP"), 1, GL_FALSE, value_ptr(lMVP));
 	renderer::bind(*texs[obj], 0);
 	glUniform1i(eff.get_uniform_location("tex"), 0);
+	if (norms[obj] != nullptr) {
+		renderer::bind(*norms[obj], 1);
+		glUniform1i(eff.get_uniform_location("normal_map"), 1);
+	}
 	renderer::bind(obj->get_material(), "mat");
 
 	renderer::render(*obj);
@@ -543,8 +552,8 @@ bool render() {
 
 	// Bind effect
 	renderer::bind(eff);
-	renderer::bind(shadowMap, 1);
-	glUniform1i(eff.get_uniform_location("shadow_map"), 1);
+	renderer::bind(shadowMap, 5);
+	glUniform1i(eff.get_uniform_location("shadow_map"), 5);
 
 	//bind light
 	renderer::bind(pLight, "point");
@@ -568,8 +577,6 @@ bool render() {
 	}
 
 	renderObject(&ground, V, P, lV, lP);
-	renderer::bind(*norms[&column], 3);
-	glUniform1i(eff.get_uniform_location("normal_map"), 3);
 	renderObject(&column, V, P, lV, lP);
 
 	//Show from inside
