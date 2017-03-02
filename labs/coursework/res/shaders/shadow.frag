@@ -1,5 +1,6 @@
 
 float castShadows(in sampler2D shadow_map, in vec4 light_pos){
+
 	vec3 proj_coords = light_pos.xyz / light_pos.w;
 
 	vec2 map_coords;
@@ -13,6 +14,8 @@ float castShadows(in sampler2D shadow_map, in vec4 light_pos){
 	float z_pos = 0.5 * proj_coords.z + 0.5;
 
 	float depth = (texture(shadow_map, map_coords)).r;
+	
+	return 1.0;
 
 	if (depth == 0.0) {
 		return 1.0;

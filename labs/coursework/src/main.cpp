@@ -12,6 +12,7 @@ map<string, mesh> sphereRing3;
 map<string, mesh> sphereRing4;
 mesh skyBox;
 mesh ground;
+mesh column;
 // Reference maps
 map<mesh*, texture*> texs;
 map<mesh*, mesh*> meshHierarchy;
@@ -24,6 +25,7 @@ shadow_map shadow;
 // Texture
 texture tex;
 texture shadowMap;
+texture tex2;
 // Effects
 effect eff;
 effect sheff;
@@ -35,7 +37,7 @@ uint cam_state = 0;
 // Mouse positions
 double mouse_x;
 double mouse_y;
-// Disable skybox
+// Disable skybox (debug boolean)
 bool noSky = true;
 
 //focus the free cam on a target location
@@ -113,6 +115,7 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 bool load_content() {
 	// Loads in a texture   
 	tex = texture("textures/check_1.png");
+	tex2 = texture("textures/Marble_Base_Color.jpg");
 
 	// Make sky box mesh and give details
 	if (!noSky) {
@@ -121,10 +124,17 @@ bool load_content() {
 		texs[&skyBox] = &tex;*/
 	}
 
+	// Make the plane
 	ground = mesh(geometry_builder().create_plane(200.0f, 200.0f));
 	ground.get_transform().translate(vec3(200.0f, 0.0f, 0.0f));
 	ground.get_transform().rotate(eulerAngleZ(half_pi<float>()));
 	texs[&ground] = &tex;
+
+	// Import the column
+	column = mesh(geometry("models/Column_HP.obj"));  
+	texs[&column] = &tex2;
+	meshHierarchy[&column] = nullptr;
+	column.get_transform().position = vec3(5.0f, 0.0f, 0.0f);
 
 	// Make various sphere structures
 	makeSphereStructure(&sphereRing, 50.0f);
@@ -549,6 +559,7 @@ bool render() {
 	}
 
 	renderObject(&ground, V, P, lV, lP);
+	renderObject(&column, V, P, lV, lP);
 
 	//Show from inside
 	if (!noSky) {
