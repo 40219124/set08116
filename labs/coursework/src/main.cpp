@@ -15,6 +15,7 @@ mesh ground;
 mesh column;
 // Reference maps
 map<mesh*, texture*> texs;
+map<mesh*, texture*> norms;
 map<mesh*, mesh*> meshHierarchy;
 // Lights
 directional_light dLight;
@@ -25,7 +26,6 @@ shadow_map shadow;
 // Texture
 texture tex;
 texture shadowMap;
-texture tex2;
 // Effects
 effect eff;
 effect sheff;
@@ -115,7 +115,8 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 bool load_content() {
 	// Loads in a texture   
 	tex = texture("textures/check_1.png");
-	tex2 = texture("textures/Marble_Base_Color.jpg");
+	static texture column_tex = texture("textures/Marble_Base_Color.jpg");
+	static texture column_norm = texture("textures/Marble_Normal_OpenGL.jpg");
 
 	// Make sky box mesh and give details
 	if (!noSky) {
@@ -131,10 +132,12 @@ bool load_content() {
 	texs[&ground] = &tex;
 
 	// Import the column
-	column = mesh(geometry("models/Column_HP.obj"));  
-	texs[&column] = &tex2;
+	column = mesh(geometry("models/Column_HP.obj"));
+	texs[&column] = &column_tex;
+	norms[&column] = &column_norm;
 	meshHierarchy[&column] = nullptr;
 	column.get_transform().position = vec3(5.0f, 0.0f, 0.0f);
+	column.get_transform().scale = vec3(3.0f);
 
 	// Make various sphere structures
 	makeSphereStructure(&sphereRing, 50.0f);
@@ -170,7 +173,7 @@ bool load_content() {
 		dLight.set_light_colour(vec4(0.0f, 0.0f, 0.0, 1.0f));
 	}
 	// Set point light properties
-	bool pLightOn = false;
+	bool pLightOn = true;
 	pLight.move(vec3(0.0f, 10.0f, 10.0f));
 	pLight.set_range(30.0f);
 	pLight.set_light_colour(vec4(1.0f, 0.6f, 1.0f, 1.0f));
