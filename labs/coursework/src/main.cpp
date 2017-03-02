@@ -132,10 +132,17 @@ bool load_content() {
 	static texture grass_norm = texture("textures/grass01_n.jpg");
 	ground = mesh(geometry_builder().create_plane(50.0f, 50.0f));
 	ground.get_transform().scale = vec3(4.0f);
+	// Make hill
+	hill = ground;
 	ground.get_transform().translate(vec3(100.0f, 0.0f, 0.0f));
 	ground.get_transform().rotate(eulerAngleZ(half_pi<float>()));  
 	texs[&ground] = &grass_tex;
 	norms[&ground] = &grass_norm;
+
+
+	texs[&hill] = &grass_tex;
+	norms[&hill] = &grass_norm;
+	
 
 	// Import the column
 	column = mesh(geometry("models/Column_HP.obj"));
@@ -570,6 +577,7 @@ bool render() {
 		renderShadow(&item.second, lV, lP);
 	}
 	renderShadow(&ground, lV, lP);
+	renderShadow(&column, lV, lP);
 
 	renderer::set_render_target();
 	glCullFace(GL_BACK);
@@ -587,8 +595,9 @@ bool render() {
 	renderer::bind(sLight, "spot");
 	//Get camera information
 	renderCams(V, P);
-	renderObject(&ground, V, P, lV, lP);
 	renderObject(&column, V, P, lV, lP);
+	renderObject(&hill, V, P, lV, lP);
+	//renderObject(&ground, V, P, lV, lP);
 
 	renderer::bind(simple_eff);
 	//bind light
@@ -596,7 +605,7 @@ bool render() {
 	renderer::bind(dLight, "direct");
 	renderer::bind(sLight, "spot");
 	glUniform1i(simple_eff.get_uniform_location("shadow_map"), 5);
-
+	//renderSimpleObject(&ground, V, P, lV, lP);
 	//Render the sphere meshes
 	for (pair<const string, mesh> &item : sphereRing) {
 		renderSimpleObject(&item.second, V, P, lV, lP);
