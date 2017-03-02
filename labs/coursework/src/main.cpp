@@ -78,7 +78,7 @@ void freeCamHelp(vec3 target) {
 //make a map of spheres
 void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) {
 	// Create the parent sphere
-	(*sphereStructure)["sphere0"] = mesh(geometry_builder().create_sphere(10, 20, vec3(2.5f)));
+	(*sphereStructure)["sphere0"] = mesh(geometry_builder().create_sphere(10, 20, vec3(1.0f)));
 	(*sphereStructure)["sphere0"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	(*sphereStructure)["sphere0"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
 	(*sphereStructure)["sphere0"].get_material().set_shininess(25.0f);
@@ -136,14 +136,19 @@ bool load_content() {
 	texs[&column] = &column_tex;
 	norms[&column] = &column_norm;
 	meshHierarchy[&column] = nullptr;
-	column.get_transform().position = vec3(5.0f, 0.0f, 0.0f);
-	column.get_transform().scale = vec3(3.0f);
+	column.get_transform().position = vec3(0.0f, 0.0f, 0.0f);
+	column.get_transform().scale = vec3(9.0f);
 
 	// Make various sphere structures
-	makeSphereStructure(&sphereRing, 50.0f);
+	makeSphereStructure(&sphereRing, 20.0f);
 	makeSphereStructure(&sphereRing2, 10.0f);
 	makeSphereStructure(&sphereRing3, 10.0f);
 	makeSphereStructure(&sphereRing4, 10.0f);
+
+	// Set information for the first sphere ring
+	sphereRing["sphere0"].get_transform().translate(vec3(0.0f, 1.7f, 0.0f));
+	sphereRing["sphere0"].get_transform().scale = vec3(0.05f);
+	meshHierarchy[&sphereRing["sphere0"]] = &column;
 
 	// Set information for the second sphere ring
 	sphereRing2["sphere0"].get_transform().translate(vec3(40.0f, 20.0f, 30.0f));
@@ -189,7 +194,8 @@ bool load_content() {
 	// Load in shaders
 	eff.add_shader("shaders/coursework.vert", GL_VERTEX_SHADER);
 	vector<string> frags{ "shaders/coursework.frag", "shaders/directional.frag",
-		"shaders/point.frag", "shaders/spot.frag", "shaders/shadow.frag" };
+		"shaders/point.frag", "shaders/spot.frag", "shaders/shadow.frag",
+		"shaders/normal.frag" };
 	eff.add_shader(frags, GL_FRAGMENT_SHADER);
 	// Build effect
 	eff.build();
@@ -336,17 +342,17 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 	//360 degrees. Shouldn't edit
 	float full_circle = two_pi<float>();
 	//sphere wave variable manipulation
-	float waves_per_circle = 2.0f;	//number of sin waves in the vertical
-	float wibble_speed = 2.0f;		//speed at which the spheres travel the sin arc
-	float amplitude = 0.2f;			//radians around z axis (pi/2 goes to poles)
+	float waves_per_circle = 6.0f;	//number of sin waves in the vertical
+	float wibble_speed = 0.5f;		//speed at which the spheres travel the sin arc
+	float amplitude = pi<float>();			//radians around z axis (pi/2 goes to poles)
 	float circling_speed = 1.0f;	//radians per second
 	//ring radius transformations
-	float waves_per_ring = 2.0f;	//number of sin waves in the horizontal 
-	float change = 0.2f;			// percentage the radius fluctuates by
+	float waves_per_ring = 13.0f;	//number of sin waves in the horizontal 
+	float change = 0.4f;			// percentage the radius fluctuates by
 	float width_disable = 1.0f;		//0 for no radial fluctuation, 1 for regular radial fluctuation
 	float shrink_factor = spheres / (12.0f + spheres);
 	// Radius of the ring
-	vec3 radius = vec3(13.0f, 0.0f, 0.0f);
+	vec3 radius = vec3(5.0f, 0.0f, 0.0f);
 	// Variables to be used within loop
 	vec3 calculated_radius;
 	quat rotq;
@@ -562,6 +568,8 @@ bool render() {
 	}
 
 	renderObject(&ground, V, P, lV, lP);
+	renderer::bind(*norms[&column], 3);
+	glUniform1i(eff.get_uniform_location("normal_map"), 3);
 	renderObject(&column, V, P, lV, lP);
 
 	//Show from inside
