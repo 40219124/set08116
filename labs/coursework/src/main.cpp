@@ -29,7 +29,8 @@ texture tex;
 texture shadowMap;
 // Effects
 effect eff;
-effect sheff;
+effect simple_eff;
+effect shadow_eff;
 // Cameras
 target_camera target_c;
 free_camera free_c;
@@ -197,10 +198,10 @@ bool load_content() {
 	sLight.set_range(100.0f);
 
 	// Load in shaders
-	eff.add_shader("shaders/coursework.vert", GL_VERTEX_SHADER);
-	vector<string> frags{ "shaders/coursework.frag", "shaders/directional.frag",
-		"shaders/point.frag", "shaders/spot.frag", "shaders/shadow.frag",
-		"shaders/normal.frag" };
+	eff.add_shader("shaders/main_all.vert", GL_VERTEX_SHADER);
+	vector<string> frags{ "shaders/main_all.frag", "shaders/part_directional.frag",
+		"shaders/part_point.frag", "shaders/part_spot.frag", "shaders/part_shadow.frag",
+		"shaders/part_normal.frag" };
 	eff.add_shader(frags, GL_FRAGMENT_SHADER);
 	// Build effect
 	eff.build();
@@ -209,9 +210,17 @@ bool load_content() {
 	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
 
 	// Load in shadow shaders
-	sheff.add_shader("shaders/coursework.vert", GL_VERTEX_SHADER);
-	sheff.add_shader(frags, GL_FRAGMENT_SHADER);
-	sheff.build();
+	shadow_eff.add_shader("shaders/main_shadows.vert", GL_VERTEX_SHADER);
+	shadow_eff.add_shader("shaders/main_shadows.frag", GL_FRAGMENT_SHADER);
+	shadow_eff.build();
+
+	// Create simpler effect
+	simple_eff.add_shader("shaders/main_simple.vert", GL_VERTEX_SHADER);
+	frags = { "shaders/main_simple.frag", "shaders/part_directional.frag",
+		"shaders/part_point.frag", "shaders/part_spot.frag", "shaders/part_shadow.frag" };
+	simple_eff.add_shader(frags, GL_FRAGMENT_SHADER);
+	// Build effect
+	simple_eff.build(); 
 
 	// Set target camera properties 
 	target_c.set_position(vec3(0.0f, 20.0f, 20.0f));
@@ -487,6 +496,23 @@ void renderCams(mat4 &V, mat4 &P) {
 	}
 }
 // Renders a mesh
+void renderSimpleObject(mesh *obj, const mat4 &V, const mat4 &P, const mat4 &lV, const mat4 &lP) {
+	mat4 M, MVP, lMVP;
+	mat3 N;
+	transformHierarchy(obj, M, N);
+	MVP = P * (V * M); 
+	lMVP = lP * (lV * M);
+	glUniformMatrix4fv(simple_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	glUniformMatrix4fv(simple_eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
+	glUniformMatrix3fv(simple_eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(N));
+	glUniformMatrix4fv(simple_eff.get_uniform_location("lMVP"), 1, GL_FALSE, value_ptr(lMVP));
+	renderer::bind(*texs[obj], 0);
+	glUniform1i(simple_eff.get_uniform_location("tex"), 0);
+	renderer::bind(obj->get_material(), "mat");
+
+	renderer::render(*obj);
+}
+// Renders a mesh
 void renderObject(mesh *obj, const mat4 &V, const mat4 &P, const mat4 &lV, const mat4 &lP) {
 	mat4 M, MVP, lMVP;
 	mat3 N;
@@ -513,7 +539,7 @@ void renderShadow(mesh *obj, const mat4 &lV, const mat4 &lP) {
 	mat3 dc;
 	transformHierarchy(obj, M, dc);
 	MVP = lP * (lV * M);
-	glUniformMatrix4fv(sheff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	glUniformMatrix4fv(shadow_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	renderer::render(*obj);
 }
 
@@ -527,7 +553,7 @@ bool render() {
 	renderer::set_render_target(shadow);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glCullFace(GL_FRONT);
-	renderer::bind(sheff);
+	renderer::bind(shadow_eff);
 
 	lV = shadow.get_view();
 	lP = perspective<float>(half_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
@@ -561,23 +587,32 @@ bool render() {
 	renderer::bind(sLight, "spot");
 	//Get camera information
 	renderCams(V, P);
+	renderSimpleObject(&ground, V, P, lV, lP);
+	renderSimpleObject(&column, V, P, lV, lP);
+
+
+	renderer::bind(simple_eff);
+	renderer::bind(shadowMap, 5);
+	glUniform1i(eff.get_uniform_location("shadow_map"), 5);
+	//bind light
+	/*renderer::bind(pLight, "point");
+	renderer::bind(dLight, "direct");
+	renderer::bind(sLight, "spot");*/
 
 	//Render the sphere meshes
 	for (pair<const string, mesh> &item : sphereRing) {
-		renderObject(&item.second, V, P, lV, lP);
+		renderSimpleObject(&item.second, V, P, lV, lP);
 	}
 	for (pair<const string, mesh> &item : sphereRing2) {
-		renderObject(&item.second, V, P, lV, lP);
+		renderSimpleObject(&item.second, V, P, lV, lP);
 	}
 	for (pair<const string, mesh> &item : sphereRing3) {
-		renderObject(&item.second, V, P, lV, lP);
+		renderSimpleObject(&item.second, V, P, lV, lP);
 	}
 	for (pair<const string, mesh> &item : sphereRing4) {
-		renderObject(&item.second, V, P, lV, lP);
+		renderSimpleObject(&item.second, V, P, lV, lP);
 	}
 
-	renderObject(&ground, V, P, lV, lP);
-	renderObject(&column, V, P, lV, lP);
 
 	//Show from inside
 	if (!noSky) {
