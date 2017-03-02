@@ -6,6 +6,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 // Meshes
+float sphereScale = 100.0f;
 map<string, mesh> sphereRing;
 map<string, mesh> sphereRing2;
 map<string, mesh> sphereRing3;
@@ -80,13 +81,15 @@ void freeCamHelp(vec3 target) {
 //make a map of spheres
 void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) {
 	// Create the parent sphere
-	(*sphereStructure)["sphere0"] = mesh(geometry_builder().create_sphere(10, 20, vec3(1.0f)));
+	static mesh technosphere = mesh(geometry("models/Technosphere.obj"));
+	static texture sphere_tex = texture("textures/sphere color.jpg");
+	(*sphereStructure)["sphere0"] = technosphere;
 	(*sphereStructure)["sphere0"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	(*sphereStructure)["sphere0"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
 	(*sphereStructure)["sphere0"].get_material().set_shininess(25.0f);
 	(*sphereStructure)["sphere0"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	// Add texture map information
-	texs[&(*sphereStructure)["sphere0"]] = &tex;
+	texs[&(*sphereStructure)["sphere0"]] = &sphere_tex;
 	// Set hierarchy pair to be a null pointer
 	meshHierarchy[&(*sphereStructure)["sphere0"]] = nullptr;
 
@@ -107,7 +110,7 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 		sphere->get_transform().rotate(eulerAngleY(2.0f * i * pi<float>() / sphereCount));
 		sphere->get_transform().translate(vec3((*sphereStructure)[name].get_transform().get_transform_matrix() * vec4(/*sphere_count/4.0f*/10.0f, 0.0f, 0.0f, 1.0f)));
 		// maps a texture to the sphere's name
-		texs[sphere] = &tex;
+		texs[sphere] = &sphere_tex;
 		// sets the sphere's parent object
 		//(*sphereHierarchy)[name] = "sphere0";
 		meshHierarchy[sphere] = &(*sphereStructure)["sphere0"];
@@ -160,7 +163,7 @@ bool load_content() {
 
 	// Set information for the first sphere ring
 	sphereRing["sphere0"].get_transform().translate(vec3(0.0f, 1.7f, 0.0f));
-	sphereRing["sphere0"].get_transform().scale = vec3(0.05f);
+	sphereRing["sphere0"].get_transform().scale = vec3(1.0f / sphereScale);
 	meshHierarchy[&sphereRing["sphere0"]] = &column;
 
 	// Set information for the second sphere ring
@@ -386,7 +389,7 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 		//maths for spherical wibbling
 		rotq = sphere->get_transform().orientation;																									//initialise rotation to the sphere's current rotation
 		rotq = rotate(rotq, amplitude * sin((i / spheres) * waves_per_circle * full_circle + time_total * wibble_speed), vec3(0.0f, 0.0f, 1.0f));				//adds rotation around z axis to give effect of a sphere
-		calculated_radius = radius * (1.0f + change * width_disable * sin((i * waves_per_ring * full_circle / spheres) + time_total * 2.0f * wibble_speed));	//calculates radius size based on sin fluctuations
+		calculated_radius = sphereScale * radius * (1.0f + change * width_disable * sin((i * waves_per_ring * full_circle / spheres) + time_total * 2.0f * wibble_speed));	//calculates radius size based on sin fluctuations
 		sphere->get_transform().position = rotq * calculated_radius;																					//multiplies radius by rotation to get sphere position
 																																								//to change sphere scale based on distance from the origin
 		distFromO = calculated_radius.x;
@@ -597,7 +600,7 @@ bool render() {
 	renderCams(V, P);
 	renderObject(&column, V, P, lV, lP);
 	renderObject(&hill, V, P, lV, lP);
-	//renderObject(&ground, V, P, lV, lP);
+	renderObject(&ground, V, P, lV, lP);
 
 	renderer::bind(simple_eff);
 	//bind light
@@ -610,7 +613,7 @@ bool render() {
 	for (pair<const string, mesh> &item : sphereRing) {
 		renderSimpleObject(&item.second, V, P, lV, lP);
 	}
-	for (pair<const string, mesh> &item : sphereRing2) {
+	/*for (pair<const string, mesh> &item : sphereRing2) {
 		renderSimpleObject(&item.second, V, P, lV, lP);
 	}
 	for (pair<const string, mesh> &item : sphereRing3) {
@@ -618,7 +621,7 @@ bool render() {
 	}
 	for (pair<const string, mesh> &item : sphereRing4) {
 		renderSimpleObject(&item.second, V, P, lV, lP);
-	}
+	}*/
 
 
 	//Show from inside
