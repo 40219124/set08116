@@ -83,6 +83,7 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 	// Create the parent sphere
 	static mesh technosphere = mesh(geometry("models/Technosphere.obj"));
 	static texture sphere_tex = texture("textures/sphere color.jpg");
+	static texture sphere_norm = texture("textures/sphere normals.jpg");
 	(*sphereStructure)["sphere0"] = technosphere;
 	(*sphereStructure)["sphere0"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	(*sphereStructure)["sphere0"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -90,6 +91,7 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 	(*sphereStructure)["sphere0"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	// Add texture map information
 	texs[&(*sphereStructure)["sphere0"]] = &sphere_tex;
+	norms[&(*sphereStructure)["sphere0"]] = &sphere_norm;
 	// Set hierarchy pair to be a null pointer
 	meshHierarchy[&(*sphereStructure)["sphere0"]] = nullptr;
 
@@ -111,6 +113,7 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 		sphere->get_transform().translate(vec3((*sphereStructure)[name].get_transform().get_transform_matrix() * vec4(/*sphere_count/4.0f*/10.0f, 0.0f, 0.0f, 1.0f)));
 		// maps a texture to the sphere's name
 		texs[sphere] = &sphere_tex;
+		norms[sphere] = &sphere_norm;
 		// sets the sphere's parent object
 		//(*sphereHierarchy)[name] = "sphere0";
 		meshHierarchy[sphere] = &(*sphereStructure)["sphere0"];
@@ -133,12 +136,13 @@ bool load_content() {
 	// Make the plane
 	static texture grass_tex = texture("textures/grass01.jpg");
 	static texture grass_norm = texture("textures/grass01_n.jpg");
-	ground = mesh(geometry_builder().create_plane(50.0f, 50.0f));
-	ground.get_transform().scale = vec3(4.0f);
+	ground = mesh(geometry_builder().create_plane(10.0f, 10.0f));
+	ground.get_transform().scale = vec3(20.0f);
 	// Make hill
 	hill = ground;
-	ground.get_transform().translate(vec3(100.0f, 0.0f, 0.0f));
+	ground.get_transform().translate(vec3(80.0f, 50.0f, 0.0f));
 	ground.get_transform().rotate(eulerAngleZ(half_pi<float>()));  
+	ground.get_material().set_diffuse(vec4(0.5f, 0.5f, 0.1f, 1.0f));
 	texs[&ground] = &grass_tex;
 	norms[&ground] = &grass_norm;
 
@@ -153,7 +157,7 @@ bool load_content() {
 	norms[&column] = &column_norm;
 	meshHierarchy[&column] = nullptr;
 	column.get_transform().position = vec3(0.0f, 0.0f, 0.0f);
-	column.get_transform().scale = vec3(9.0f);
+	column.get_transform().scale = vec3(20.0f);
 
 	// Make various sphere structures
 	makeSphereStructure(&sphereRing, 20.0f);
@@ -163,49 +167,53 @@ bool load_content() {
 
 	// Set information for the first sphere ring
 	sphereRing["sphere0"].get_transform().translate(vec3(0.0f, 1.7f, 0.0f));
-	sphereRing["sphere0"].get_transform().scale = vec3(1.0f / sphereScale);
+	sphereRing["sphere0"].get_transform().scale = vec3(1.0f / (5.0f * sphereScale));
 	meshHierarchy[&sphereRing["sphere0"]] = &column;
 
 	// Set information for the second sphere ring
-	sphereRing2["sphere0"].get_transform().translate(vec3(40.0f, 20.0f, 30.0f));
+	sphereRing2["sphere0"].get_transform().translate(vec3(40.0f, 40.0f, 30.0f) * sphereScale * 0.25f);
 	sphereRing2["sphere0"].get_transform().rotate(rotate(quat(), half_pi<float>(), vec3(1.0f, 0.0f, 0.0f)));
 	sphereRing2["sphere0"].get_transform().scale = vec3(0.5f);
-	//meshHierarchy[&sphereRing2["sphere0"]] = &sphereRing["sphere0"];
+	meshHierarchy[&sphereRing2["sphere0"]] = &sphereRing["sphere0"];
 
 	// Set information for the third sphere ring
-	sphereRing3["sphere0"].get_transform().translate(vec3(40.0f, 0.0f, -30.0f));
-	sphereRing3["sphere0"].get_transform().scale = vec3(0.8f);
-	//meshHierarchy[&sphereRing3["sphere0"]] = &sphereRing["sphere0"];
+	sphereRing3["sphere0"].get_transform().translate(vec3(40.0f, 40.0f, -30.0f) * sphereScale * 0.25f);
+	sphereRing3["sphere0"].get_transform().scale = vec3(0.4f);
+	meshHierarchy[&sphereRing3["sphere0"]] = &sphereRing["sphere0"];
 
 	// Set information for the fourth sphere ring
-	sphereRing4["sphere0"].get_transform().translate(vec3(-40.0f, -20.0f, -30.0f));
+	sphereRing4["sphere0"].get_transform().translate(vec3(-40.0f, 40.0f, -30.0f) * sphereScale * 0.25f);
 	sphereRing4["sphere0"].get_transform().scale = vec3(0.3f);
-	//meshHierarchy[&sphereRing4["sphere0"]] = &sphereRing["sphere0"];
+	meshHierarchy[&sphereRing4["sphere0"]] = &sphereRing["sphere0"];
 
 	//meshHierarchy[&skyBox] = &sphereRing["sphere0"]; //<------------- motion sickness can be found here
 
 	// Set directional light properties
 	bool dLightOn = true;
-	dLight.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
+	dLight.set_ambient_intensity(vec4(0.01f, 0.01f, 0.01f, 1.0f));
 	dLight.set_direction(normalize(vec3(0.0f, 1.0f, 0.0f)));
-	dLight.set_light_colour(vec4(0.6f, 0.6f, 0.6, 1.0f));
+	dLight.set_light_colour(vec4(0.1f, 0.1f, 0.1, 1.0f));
 	if (!dLightOn) {
 		dLight.set_ambient_intensity(vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		dLight.set_light_colour(vec4(0.0f, 0.0f, 0.0, 1.0f));
 	}
 	// Set point light properties
 	bool pLightOn = true;
-	pLight.move(vec3(0.0f, 10.0f, 10.0f));
-	pLight.set_range(30.0f);
+	pLight.move(vec3(0.0f, 45.0f, 00.0f));
+	pLight.set_range(40.0f);
 	pLight.set_light_colour(vec4(1.0f, 0.6f, 1.0f, 1.0f));
 	if (!pLightOn) {
 		pLight.set_light_colour(vec4(0.0f, 0.0f, 0.0f, 0.0f));
 	}
 	// Set spot light properties
 	sLight.set_direction(normalize(vec3(1.0f, -0.0f, 0.0f)));
-	sLight.set_position(vec3(-40.0f, 0.0f, 0.0f));
+	sLight.set_position(vec3(-80.0f, 30.0f, 0.0f));
 	sLight.set_light_colour(vec4(0.8f, 0.7f, 0.1f, 1.0f));
-	sLight.set_range(100.0f);
+	sLight.set_range(160.0f);
+	sLight.set_power(5.0f);
+	//sLight.set_constant_attenuation(0.1f);
+	//sLight.set_linear_attenuation(0.1f);
+	//sLight.set_quadratic_attenuation(0.1f);
 
 	// Load in shaders
 	eff.add_shader("shaders/main_all.vert", GL_VERTEX_SHADER);
@@ -233,8 +241,8 @@ bool load_content() {
 	simple_eff.build(); 
 
 	// Set target camera properties 
-	target_c.set_position(vec3(0.0f, 20.0f, 20.0f));
-	target_c.set_target(vec3(0.0f, 0.0f, 0.0f));
+	target_c.set_position(sLight.get_position());
+	target_c.set_target(vec3(0.0f, sLight.get_position().y, 0.0f));
 	target_c.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 	// Set free camera properties
 	free_c.set_position(vec3(20.0f, 20.0f, 20.0f));
@@ -258,19 +266,23 @@ bool initialise() {
 void target_manipulation(float delta_time) {
 	//position 1, infront
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_1)) {
-		target_c.set_position(vec3(0.0f, 20.0f, 20.0f));
+		target_c.set_position(sLight.get_position());
+		target_c.set_target(vec3(0.0f, sLight.get_position().y, 0.0f));
 	}
 	//position 2, front-right
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_2)) {
-		target_c.set_position(vec3(20.0f, 10.0f, 20.0f));
+		target_c.set_position(sLight.get_position() * vec3(-1.0f,1.0f,1.0f));
+		target_c.set_target(vec3(0.0f, sLight.get_position().y, 0.0f));
 	}
 	//position 3, back-right
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_3)) {
-		target_c.set_position(vec3(20.0f, 10.0f, -20.0f));
+		target_c.set_position(vec3(-10.0f, 90.0f, 30.0f));
+		target_c.set_target(vec3(30.0f, 0.0f, -5.0f));
 	}
 	//position 4, back-left
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_4)) {
-		target_c.set_position(vec3(-20.0f, 10.0f, -20.0f));
+		target_c.set_position(vec3(-40.0f, 50.0f, 30.0f));
+		target_c.set_target(vec3(10.0f, sLight.get_position().y, 0.0f));
 	}
 	//zoom in on plus key
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_EQUAL)) {
@@ -368,8 +380,8 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 	//sphere wave variable manipulation
 	float waves_per_circle = 6.0f;	//number of sin waves in the vertical
 	float wibble_speed = 0.5f;		//speed at which the spheres travel the sin arc
-	float amplitude = pi<float>();			//radians around z axis (pi/2 goes to poles)
-	float circling_speed = 1.0f;	//radians per second
+	float amplitude = quarter_pi<float>();			//radians around z axis (pi/2 goes to poles)
+	float circling_speed = 0.4f;	//radians per second
 	//ring radius transformations
 	float waves_per_ring = 13.0f;	//number of sin waves in the horizontal 
 	float change = 0.4f;			// percentage the radius fluctuates by
@@ -421,8 +433,11 @@ bool update(float delta_time) {
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_Z)) {
 		cam_state = 0; //target cam
 	}
-	if (glfwGetKey(renderer::get_window(), GLFW_KEY_X)) {
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_X) && cam_state != 1) {
 		cam_state = 1; //free cam
+		glfwGetCursorPos(renderer::get_window(), &mouse_x, &mouse_y);
+		free_c.set_position(target_c.get_position());
+		freeCamHelp(target_c.get_target());
 	}
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_C)) {
 		cam_state = 2; //arc ball cam
@@ -448,13 +463,11 @@ bool update(float delta_time) {
 	// Rotate the central sphere on the x axis
 	//sphereRing["sphere0"].get_transform().orientation = (rotate(quat(), delta_time / 2.0f, vec3(1.0f, 0.0f, 0.0f)) * sphereRing["sphere0"].get_transform().orientation);
 
+	// Set the shadow to equal the values of the spot light
 	shadow.light_position = sLight.get_position();
 	shadow.light_dir = sLight.get_direction();
 
-	if (glfwGetKey(renderer::get_window(), GLFW_KEY_9)) {
-		shadow.buffer->save("shadow_map.png");
-	}
-
+	// To move the back wall on the x-axis
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT)) {
 		ground.get_transform().translate(vec3(delta_time * -20.0f, 0.0f, 0.0f));
 		cout << ground.get_transform().position.x << endl;
@@ -463,7 +476,6 @@ bool update(float delta_time) {
 		ground.get_transform().translate(vec3(delta_time * 20.0f, 0.0f, 0.0f));
 		cout << ground.get_transform().position.x << endl; 
 	}
-
 
 	return true;
 }
@@ -601,6 +613,19 @@ bool render() {
 	renderObject(&column, V, P, lV, lP);
 	renderObject(&hill, V, P, lV, lP);
 	renderObject(&ground, V, P, lV, lP);
+	//Render the sphere meshes
+	for (pair<const string, mesh> &item : sphereRing) {
+		renderObject(&item.second, V, P, lV, lP);
+	}
+	for (pair<const string, mesh> &item : sphereRing2) {
+		renderObject(&item.second, V, P, lV, lP);
+	}
+	for (pair<const string, mesh> &item : sphereRing3) {
+		renderObject(&item.second, V, P, lV, lP);
+	}
+	for (pair<const string, mesh> &item : sphereRing4) {
+		renderObject(&item.second, V, P, lV, lP);
+	}
 
 	renderer::bind(simple_eff);
 	//bind light
@@ -609,11 +634,12 @@ bool render() {
 	renderer::bind(sLight, "spot");
 	glUniform1i(simple_eff.get_uniform_location("shadow_map"), 5);
 	//renderSimpleObject(&ground, V, P, lV, lP);
+
 	//Render the sphere meshes
-	for (pair<const string, mesh> &item : sphereRing) {
+	/*for (pair<const string, mesh> &item : sphereRing) {
 		renderSimpleObject(&item.second, V, P, lV, lP);
 	}
-	/*for (pair<const string, mesh> &item : sphereRing2) {
+	for (pair<const string, mesh> &item : sphereRing2) {
 		renderSimpleObject(&item.second, V, P, lV, lP);
 	}
 	for (pair<const string, mesh> &item : sphereRing3) {
