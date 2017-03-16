@@ -27,4 +27,5 @@ void main()
 	// Final colour is product ot environment map and tarnish
 	// ******************************************************
 	colour = environment_sample * tex_sample;
+	colour.a = 1.0;
 }
