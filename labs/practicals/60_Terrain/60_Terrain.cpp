@@ -92,7 +92,7 @@ void generate_terrain(geometry &geom, const texture &height_map, unsigned int wi
 
 		// Normal is normal(cross product) of these two sides
 		// *********************************
-		vec3 norm = normalize(cross(side1, side2));
+		vec3 norm = normalize(cross(side2, side1));
 
 		// Add to normals in the normal buffer using the indices for the triangle
 		normals[idx1] = normals[idx1] + norm;
@@ -168,8 +168,8 @@ bool load_content() {
 	eff.build();
 
 	// Material definitions
-	light.set_ambient_intensity(vec4(0.6f, 0.6f, 0.6f, 1.0f));
-	light.set_light_colour(vec4(0.9f, 0.9f, 0.9f, 1.0f));
+	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
+	light.set_light_colour(vec4(0.7f, 0.7f, 0.7f, 1.0f));
 	light.set_direction(normalize(vec3(1.0f, 1.0f, 1.0f)));
 	terr.get_material().set_diffuse(vec4(0.5f, 0.5f, 0.5f, 1.0f));
 	terr.get_material().set_specular(vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -222,6 +222,18 @@ bool update(float delta_time) {
 	}
 	if (glfwGetKey(renderer::get_window(), 'D')) {
 		translation.x += 5.0f * delta_time;
+	}
+	if (glfwGetKey(renderer::get_window(), ' ')) {
+		translation.y += 5.0f * delta_time;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT_SHIFT)) {
+		translation.y -= 5.0f * delta_time;
+	}
+	if (glfwGetKey(renderer::get_window(), '-')) {
+		terr.get_transform().scale.y = terr.get_transform().scale.y * (1 - 0.2f * delta_time);
+	}
+	if (glfwGetKey(renderer::get_window(), '=')) {
+		terr.get_transform().scale.y = terr.get_transform().scale.y * (1 + 0.2f * delta_time);
 	}
 	// Move camera
 	cam.move(translation);
