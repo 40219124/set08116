@@ -15,6 +15,7 @@ effect eff;
 texture tex;
 target_camera cam;
 directional_light light;
+int fog_type = 0;
 
 bool load_content() {
 	// Create plane mesh
@@ -123,6 +124,16 @@ bool update(float delta_time) {
 		cam.set_position(vec3(50, 10, -50));
 	}
 
+
+	if (glfwGetKey(renderer::get_window(), 'Q')) {
+		fog_type = 0;
+	}
+	if (glfwGetKey(renderer::get_window(), 'W')) {
+		fog_type = 1;
+	}
+	if (glfwGetKey(renderer::get_window(), 'E')) {
+		fog_type = 2;
+	}
 	// Rotate the sphere
 	meshes["sphere"].get_transform().rotate(vec3(0.0f, half_pi<float>(), 0.0f) * delta_time);
 
@@ -173,7 +184,7 @@ bool render() {
 		// Set fog density: 0.04f
 		glUniform1f(eff.get_uniform_location("fog_density"), 0.04f);
 		// Set fog type: FOG_EXP2
-		glUniform1i(eff.get_uniform_location("fog_type"), 0);
+		glUniform1i(eff.get_uniform_location("fog_type"), fog_type); 
 		// *********************************
 
 		// Render mesh
