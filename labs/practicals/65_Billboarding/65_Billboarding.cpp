@@ -70,7 +70,7 @@ bool update(float delta_time) {
   double delta_y = current_y - cursor_y;
 
   // Multiply deltas by ratios and delta_time - gets actual change in orientation
-  delta_x *= -ratio_width;
+  delta_x *= -ratio_width; 
   delta_y *= -ratio_height;
 
   // Rotate cameras by delta
