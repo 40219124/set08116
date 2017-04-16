@@ -131,14 +131,14 @@ bool load_content() {
 
 	// Make sky box mesh and give details
 	skyBox = mesh(geometry_builder().create_box(vec3(200.0f)));
-	array<string, 6> box_files = { "textures/posz.jpg",  "textures/negz.jpg",  "textures/posy.jpg",  
-		"textures/negy.jpg",  "textures/posx.jpg",  "textures/negx.jpg" };
+	array<string, 6> box_files = { "textures/posx.jpg",  "textures/negx.jpg",  "textures/posy.jpg",
+		"textures/negy.jpg",  "textures/posz.jpg",  "textures/negz.jpg" };
 	setting = cubemap(box_files);
 
 	// Make the plane
 	static texture grass_tex = texture("textures/grass01.jpg");
 	static texture grass_norm = texture("textures/grass01_n.jpg");
-	ground = mesh(geometry_builder().create_plane(10.0f, 10.0f));
+	ground = mesh(geometry_builder().create_plane(100.0f, 100.0f));
 	ground.get_transform().scale = vec3(20.0f);
 	// Make hill
 	hill = ground;
@@ -192,7 +192,7 @@ bool load_content() {
 
 	// Set directional light properties
 	bool dLightOn = true;
-	dLight.set_ambient_intensity(vec4(0.01f, 0.01f, 0.01f, 1.0f));
+	dLight.set_ambient_intensity(vec4(0.5f, 0.5f, 0.5f, 1.0f));
 	dLight.set_direction(normalize(vec3(0.0f, 1.0f, 0.0f)));
 	dLight.set_light_colour(vec4(0.1f, 0.1f, 0.1, 1.0f));
 	if (!dLightOn) {
@@ -208,8 +208,8 @@ bool load_content() {
 		pLight.set_light_colour(vec4(0.0f, 0.0f, 0.0f, 0.0f));
 	}
 	// Set spot light properties
-	sLight.set_direction(normalize(vec3(1.0f, -0.0f, 0.0f)));
-	sLight.set_position(vec3(-80.0f, 30.0f, 0.0f));
+	sLight.set_direction(normalize(vec3(0.0f, -1.0f, 0.0f)));
+	sLight.set_position(vec3(0.0f, 80.0f, 0.0f));
 	sLight.set_light_colour(vec4(0.8f, 0.7f, 0.1f, 1.0f));
 	sLight.set_range(160.0f);
 	sLight.set_power(5.0f);
@@ -244,12 +244,12 @@ bool load_content() {
 
 	// create skybox effect
 	sky_eff.add_shader("shaders/main_skybox.vert", GL_VERTEX_SHADER);
-	sky_eff.add_shader("shaders/main_skybox.frag", GL_FRAGMENT_SHADER);	
+	sky_eff.add_shader("shaders/main_skybox.frag", GL_FRAGMENT_SHADER);
 	sky_eff.build();
 
 	// Set target camera properties 
-	target_c.set_position(sLight.get_position());
-	target_c.set_target(vec3(0.0f, sLight.get_position().y, 0.0f));
+	target_c.set_position(vec3(-80.0f, 30.0f, 0.0f));
+	target_c.set_target(vec3(0.0f, 30.0f, 0.0f));
 	target_c.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 	// Set free camera properties
 	free_c.set_position(vec3(20.0f, 20.0f, 20.0f));
@@ -273,13 +273,13 @@ bool initialise() {
 void target_manipulation(float delta_time) {
 	//position 1, infront
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_1)) {
-		target_c.set_position(sLight.get_position());
-		target_c.set_target(vec3(0.0f, sLight.get_position().y, 0.0f));
+		target_c.set_position(vec3(-80.0f, 30.0f, 0.0f));
+		target_c.set_target(vec3(0.0f, 30.0f, 0.0f));
 	}
 	//position 2, front-right
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_2)) {
-		target_c.set_position(sLight.get_position() * vec3(-1.0f, 1.0f, 1.0f));
-		target_c.set_target(vec3(0.0f, sLight.get_position().y, 0.0f));
+		target_c.set_position(vec3(80.0f, 30.0f, 0.0f));
+		target_c.set_target(vec3(0.0f, 30.0f, 0.0f));
 	}
 	//position 3, back-right
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_3)) {
@@ -289,7 +289,7 @@ void target_manipulation(float delta_time) {
 	//position 4, back-left
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_4)) {
 		target_c.set_position(vec3(-40.0f, 50.0f, 30.0f));
-		target_c.set_target(vec3(10.0f, sLight.get_position().y, 0.0f));
+		target_c.set_target(vec3(10.0f, 30.0f, 0.0f));
 	}
 	//zoom in on plus key
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_EQUAL)) {
@@ -516,25 +516,25 @@ void transformHierarchy(mesh *currentMesh, mat4 &M, mat3 &N) {
 	}
 }
 // Give the render function the appropriate information based on the currently in-use camera
-void renderCams(mat4 &V, mat4 &P) {
+void renderCams(mat4 &V, mat4 &P, vec3 &cam_pos) {
 	switch (cam_state) {
 	case(0):
 		V = target_c.get_view();
 		P = target_c.get_projection();
 		//set camera location, eye_pos
-		glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(target_c.get_position()));
+		cam_pos = target_c.get_position();
 		break;
 	case(1):
 		V = free_c.get_view();
 		P = free_c.get_projection();
 		//set camera location, eye_pos
-		glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(free_c.get_position()));
+		cam_pos = free_c.get_position();
 		break;
 	default:
 		V = target_c.get_view();
 		P = target_c.get_projection();
 		//set camera location, eye_pos
-		glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(target_c.get_position()));
+		cam_pos = target_c.get_position();
 		break;
 	}
 }
@@ -591,8 +591,9 @@ bool render() {
 	mat4 M, V, P, MVP;
 	mat3 N;
 	mat4 lV, lP, lMVP;
+	vec3 cam_pos;
 
-	renderCams(V, P);
+	renderCams(V, P, cam_pos);
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
 	glDisable(GL_CULL_FACE);
@@ -645,9 +646,10 @@ bool render() {
 	renderer::bind(dLight, "direct");
 	renderer::bind(sLight, "spot");
 	//Get camera information
+	glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(cam_pos));
 	renderObject(&column, V, P, lV, lP);
 	renderObject(&hill, V, P, lV, lP);
-	renderObject(&ground, V, P, lV, lP);
+	//renderObject(&ground, V, P, lV, lP);
 	//Render the sphere meshes
 	for (pair<const string, mesh> &item : sphereRing) {
 		renderObject(&item.second, V, P, lV, lP);
