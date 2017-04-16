@@ -28,10 +28,12 @@ shadow_map shadow;
 // Texture
 texture tex;
 texture shadowMap;
+cubemap setting;
 // Effects
 effect eff;
 effect simple_eff;
 effect shadow_eff;
+effect sky_box;
 // Cameras
 target_camera target_c;
 free_camera free_c;
@@ -128,11 +130,10 @@ bool load_content() {
 	static texture column_norm = texture("textures/Marble_Normal_OpenGL.jpg");
 
 	// Make sky box mesh and give details
-	if (!noSky) {
-		/*skyBox = mesh(geometry_builder().create_box(vec3(200.0f)));
-		skyBox.get_material().set_emissive(vec4(0.2f, 0.2f, 0.2f, 1.0f));
-		texs[&skyBox] = &tex;*/
-	}
+	skyBox = mesh(geometry_builder().create_box(vec3(200.0f)));
+	array<string, 6> box_files = { "textures/posz.jpg",  "textures/negz.jpg",  "textures/posy.jpg",  
+		"textures/negy.jpg",  "textures/posx.jpg",  "textures/negx.jpg" };
+	setting = cubemap(box_files);
 
 	// Make the plane
 	static texture grass_tex = texture("textures/grass01.jpg");
@@ -423,6 +424,20 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 		//rotate centre (parent) sphere
 	(*sphere_structure)["sphere0"].get_transform().rotate(eulerAngleY(delta_time * circling_speed));
 }
+//move the skybox
+void sky_follow() {
+	switch (cam_state)
+	{
+	case(0):
+		skyBox.get_transform().position = target_c.get_position();
+		break;
+	case(1):
+		skyBox.get_transform().position = free_c.get_position();
+		break;
+	default:
+		break;
+	}
+}
 
 bool update(float delta_time) {
 	//print fps
@@ -477,7 +492,7 @@ bool update(float delta_time) {
 		ground.get_transform().translate(vec3(delta_time * 20.0f, 0.0f, 0.0f));
 		cout << ground.get_transform().position.x << endl;
 	}
-
+	sky_follow();
 	return true;
 }
 // Aquire the transformation matrix of a child object 
@@ -600,6 +615,17 @@ bool render() {
 	shadowMap = shadow.buffer->get_depth();
 	// stop shadows!!!-------------------------------
 
+	renderCams(V, P);
+
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	glDisable(GL_CULL_FACE);
+	renderer::bind(sky_box);
+	M = skyBox.get_transform().get_transform_matrix();
+	MVP = P * (V * M);
+
+
+
 	// Bind effect
 	renderer::bind(eff);
 	renderer::bind(shadowMap, 5);
@@ -610,7 +636,6 @@ bool render() {
 	renderer::bind(dLight, "direct");
 	renderer::bind(sLight, "spot");
 	//Get camera information
-	renderCams(V, P);
 	renderObject(&column, V, P, lV, lP);
 	renderObject(&hill, V, P, lV, lP);
 	renderObject(&ground, V, P, lV, lP);
