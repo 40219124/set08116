@@ -6,7 +6,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 // Meshes
-float sphereScale = 100.0f;
+float sphereScale = 4.0f;
 map<string, mesh> sphereRing;
 map<string, mesh> sphereRing2;
 map<string, mesh> sphereRing3;
@@ -81,7 +81,7 @@ void freeCamHelp(vec3 target) {
 //make a map of spheres
 void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) {
 	// Create the parent sphere
-	static mesh technosphere = mesh(geometry("models/Technosphere.obj"));
+	static mesh technosphere = mesh(geometry("models/Technosphere_4.obj"));
 	static texture sphere_tex = texture("textures/sphere color.jpg");
 	static texture sphere_norm = texture("textures/sphere normals.jpg");
 	(*sphereStructure)["sphere0"] = technosphere;
@@ -101,7 +101,8 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 	for (int i = 0; i < sphereCount; ++i) {
 		//creates an index for the map
 		string name = "sphere" + (to_string(i + 1));
-		(*sphereStructure)[name] = mesh(geometry_builder().create_sphere());
+		//(*sphereStructure)[name] = mesh(geometry_builder().create_sphere());
+		(*sphereStructure)[name] = technosphere;
 		sphere = &(*sphereStructure)[name];
 		// sets material properties
 		sphere->get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -141,7 +142,7 @@ bool load_content() {
 	// Make hill
 	hill = ground;
 	ground.get_transform().translate(vec3(80.0f, 50.0f, 0.0f));
-	ground.get_transform().rotate(eulerAngleZ(half_pi<float>()));  
+	ground.get_transform().rotate(eulerAngleZ(half_pi<float>()));
 	ground.get_material().set_diffuse(vec4(0.5f, 0.5f, 0.1f, 1.0f));
 	texs[&ground] = &grass_tex;
 	norms[&ground] = &grass_norm;
@@ -149,7 +150,7 @@ bool load_content() {
 
 	texs[&hill] = &grass_tex;
 	norms[&hill] = &grass_norm;
-	
+
 
 	// Import the column
 	column = mesh(geometry("models/Column_HP.obj"));
@@ -238,7 +239,7 @@ bool load_content() {
 		"shaders/part_point.frag", "shaders/part_spot.frag", "shaders/part_shadow.frag" };
 	simple_eff.add_shader(frags, GL_FRAGMENT_SHADER);
 	// Build effect
-	simple_eff.build(); 
+	simple_eff.build();
 
 	// Set target camera properties 
 	target_c.set_position(sLight.get_position());
@@ -271,7 +272,7 @@ void target_manipulation(float delta_time) {
 	}
 	//position 2, front-right
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_2)) {
-		target_c.set_position(sLight.get_position() * vec3(-1.0f,1.0f,1.0f));
+		target_c.set_position(sLight.get_position() * vec3(-1.0f, 1.0f, 1.0f));
 		target_c.set_target(vec3(0.0f, sLight.get_position().y, 0.0f));
 	}
 	//position 3, back-right
@@ -405,7 +406,7 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 		sphere->get_transform().position = rotq * calculated_radius;																					//multiplies radius by rotation to get sphere position
 																																								//to change sphere scale based on distance from the origin
 		distFromO = calculated_radius.x;
-		sphere->get_transform().scale = vec3(shrink_factor * pi<float>() * distFromO / spheres);
+		sphere->get_transform().scale = vec3(shrink_factor * pi<float>() * distFromO / (spheres * sphereScale));
 
 		//--------------maths for cylindrical sphere wibbling------------------
 		/*sphereRing[name].get_transform().position = (vec3(sphereRing[name].get_transform().position.x,
@@ -474,7 +475,7 @@ bool update(float delta_time) {
 	}
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_RIGHT)) {
 		ground.get_transform().translate(vec3(delta_time * 20.0f, 0.0f, 0.0f));
-		cout << ground.get_transform().position.x << endl; 
+		cout << ground.get_transform().position.x << endl;
 	}
 
 	return true;
@@ -522,7 +523,7 @@ void renderSimpleObject(mesh *obj, const mat4 &V, const mat4 &P, const mat4 &lV,
 	mat4 M, MVP, lMVP;
 	mat3 N;
 	transformHierarchy(obj, M, N);
-	MVP = P * (V * M); 
+	MVP = P * (V * M);
 	lMVP = lP * (lV * M);
 	glUniformMatrix4fv(simple_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	glUniformMatrix4fv(simple_eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
