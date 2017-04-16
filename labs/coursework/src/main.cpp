@@ -33,7 +33,7 @@ cubemap setting;
 effect eff;
 effect simple_eff;
 effect shadow_eff;
-effect sky_box;
+effect sky_eff;
 // Cameras
 target_camera target_c;
 free_camera free_c;
@@ -241,6 +241,11 @@ bool load_content() {
 	simple_eff.add_shader(frags, GL_FRAGMENT_SHADER);
 	// Build effect
 	simple_eff.build();
+
+	// create skybox effect
+	sky_eff.add_shader("shaders/main_skybox.vert", GL_VERTEX_SHADER);
+	sky_eff.add_shader("shaders/main_skybox.frag", GL_FRAGMENT_SHADER);	
+	sky_eff.build();
 
 	// Set target camera properties 
 	target_c.set_position(sLight.get_position());
@@ -587,6 +592,21 @@ bool render() {
 	mat3 N;
 	mat4 lV, lP, lMVP;
 
+	renderCams(V, P);
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	glDisable(GL_CULL_FACE);
+	renderer::bind(sky_eff);
+	M = skyBox.get_transform().get_transform_matrix();
+	MVP = P * (V * M);
+	glUniformMatrix4fv(sky_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	renderer::bind(setting, 0);
+	glUniform1i(sky_eff.get_uniform_location("cubemap"), 0);
+	renderer::render(skyBox);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glDepthMask(GL_TRUE);
+
 	// Shadows!!!------------------------------------
 	renderer::set_render_target(shadow);
 	glClear(GL_DEPTH_BUFFER_BIT);
@@ -614,17 +634,6 @@ bool render() {
 	glCullFace(GL_BACK);
 	shadowMap = shadow.buffer->get_depth();
 	// stop shadows!!!-------------------------------
-
-	renderCams(V, P);
-
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask(GL_FALSE);
-	glDisable(GL_CULL_FACE);
-	renderer::bind(sky_box);
-	M = skyBox.get_transform().get_transform_matrix();
-	MVP = P * (V * M);
-
-
 
 	// Bind effect
 	renderer::bind(eff);
