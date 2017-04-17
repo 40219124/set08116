@@ -15,12 +15,12 @@ layout(location = 0) out vec4 colour;
 void main() {
   // *********************************
   // Sample texture colour
-
+	vec4 tex_colour = texture(tex, tex_coord);
   // Calculate grey value
-
+	float grey = dot(vec3(tex_colour), intensity);
   // Use greyscale to as final colour
   // - ensure alpha is 1
-
-
+	colour = vec4(grey);
+	colour.a = 1.0f;
   // *********************************
 }
