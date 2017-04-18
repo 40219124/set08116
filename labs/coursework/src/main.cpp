@@ -15,6 +15,7 @@ mesh skyBox;
 mesh ground;
 mesh hill;
 mesh column;
+geometry polaroid;
 // Reference maps
 map<mesh*, texture*> texs;
 map<mesh*, texture*> norms;
@@ -23,8 +24,9 @@ map<mesh*, mesh*> meshHierarchy;
 directional_light dLight;
 point_light pLight;
 spot_light sLight;
-// Shadows
+// Buffers
 shadow_map shadow;
+frame_buffer snap;
 // Texture
 texture tex;
 texture shadowMap;
@@ -148,10 +150,15 @@ bool load_content() {
 	texs[&ground] = &grass_tex;
 	norms[&ground] = &grass_norm;
 
-
 	texs[&hill] = &grass_tex;
 	norms[&hill] = &grass_norm;
 
+	// Make the quad for rendering to screen region
+	vector<vec3> quad_pos = { vec3(-1.0f, -1.0f, 0.0f),  vec3(1.0f, -1.0f, 0.0f),  vec3(-1.0f, 1.0f, 0.0f),  vec3(1.0f, 1.0f, 0.0f) };
+	vector<vec2> quad_texco = { vec2(0.0f, 0.0f), vec2(1.0f, 0.0f), vec2(0.0f, 1.0f), vec2(1.0f, 1.0f) };
+	polaroid.set_type(GL_TRIANGLE_STRIP);
+	polaroid.add_buffer(quad_pos, BUFFER_INDEXES::POSITION_BUFFER);
+	polaroid.add_buffer(quad_texco, BUFFER_INDEXES::TEXTURE_COORDS_0);
 
 	// Import the column
 	column = mesh(geometry("models/Column_HP.obj"));
@@ -188,8 +195,6 @@ bool load_content() {
 	sphereRing4["sphere0"].get_transform().scale = vec3(0.3f);
 	meshHierarchy[&sphereRing4["sphere0"]] = &sphereRing["sphere0"];
 
-	//meshHierarchy[&skyBox] = &sphereRing["sphere0"]; //<------------- motion sickness can be found here
-
 	// Set directional light properties
 	bool dLightOn = true;
 	dLight.set_ambient_intensity(vec4(0.5f, 0.5f, 0.5f, 1.0f));
@@ -213,9 +218,6 @@ bool load_content() {
 	sLight.set_light_colour(vec4(0.8f, 0.7f, 0.1f, 1.0f));
 	sLight.set_range(160.0f);
 	sLight.set_power(5.0f);
-	//sLight.set_constant_attenuation(0.1f);
-	//sLight.set_linear_attenuation(0.1f);
-	//sLight.set_quadratic_attenuation(0.1f);
 
 	// Load in shaders
 	eff.add_shader("shaders/main_all.vert", GL_VERTEX_SHADER);
@@ -228,6 +230,7 @@ bool load_content() {
 
 	// Set shadow properties
 	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
+	snap = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
 
 	// Load in shadow shaders
 	shadow_eff.add_shader("shaders/main_shadows.vert", GL_VERTEX_SHADER);
@@ -608,7 +611,7 @@ bool render() {
 	glEnable(GL_CULL_FACE);
 	glDepthMask(GL_TRUE);
 
-	// Shadows!!!------------------------------------
+	// Shadows start!!!------------------------------------
 	renderer::set_render_target(shadow);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glCullFace(GL_FRONT);
@@ -631,11 +634,12 @@ bool render() {
 	renderShadow(&ground, lV, lP);
 	renderShadow(&column, lV, lP);
 
-	renderer::set_render_target();
 	glCullFace(GL_BACK);
 	shadowMap = shadow.buffer->get_depth();
 	// stop shadows!!!-------------------------------
 
+	renderer::set_render_target(snap);
+	renderer::clear();
 	// Bind effect
 	renderer::bind(eff);
 	renderer::bind(shadowMap, 5);
@@ -670,30 +674,14 @@ bool render() {
 	renderer::bind(dLight, "direct");
 	renderer::bind(sLight, "spot");
 	glUniform1i(simple_eff.get_uniform_location("shadow_map"), 5);
-	//renderSimpleObject(&ground, V, P, lV, lP);
 
-	//Render the sphere meshes
-	/*for (pair<const string, mesh> &item : sphereRing) {
-		renderSimpleObject(&item.second, V, P, lV, lP);
-	}
-	for (pair<const string, mesh> &item : sphereRing2) {
-		renderSimpleObject(&item.second, V, P, lV, lP);
-	}
-	for (pair<const string, mesh> &item : sphereRing3) {
-		renderSimpleObject(&item.second, V, P, lV, lP);
-	}
-	for (pair<const string, mesh> &item : sphereRing4) {
-		renderSimpleObject(&item.second, V, P, lV, lP);
-	}*/
-
-
-	//Show from inside
-	if (!noSky) {
-		glDisable(GL_CULL_FACE);
-		//	renderObject(&skyBox, V, P, lV, lP);
-		glEnable(GL_CULL_FACE);
-	}
-	//End skybox render
+	renderer::set_render_target();
+	renderer::bind(sky_eff);
+	MVP = mat4(1.0f);
+	glUniformMatrix4fv(sky_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	renderer::bind(snap.get_frame(), 0);
+	glUniform1i(sky_eff.get_uniform_location("cubemap"), 0);
+	renderer::render(polaroid);
 
 	return true;
 }
