@@ -177,7 +177,7 @@ bool load_content() {
 
 	// Set information for the first sphere ring
 	sphereRing["sphere0"].get_transform().translate(vec3(0.0f, 1.7f, 0.0f));
-	sphereRing["sphere0"].get_transform().scale = vec3(1.0f / (25.0f * sphereScale));
+	sphereRing["sphere0"].get_transform().scale = vec3(1.0f / (20.0f * sphereScale));
 	meshHierarchy[&sphereRing["sphere0"]] = &column;
 
 	// Set information for the second sphere ring
