@@ -7,17 +7,15 @@ float castShadows(in sampler2D shadow_map, in vec4 light_pos){
 	map_coords.x = 0.5 * proj_coords.x + 0.5;
 	map_coords.y = 0.5 * proj_coords.y + 0.5;
 	
-	if (map_coords.x < 0 || map_coords.x > 1 || map_coords.y < 0 || map_coords.y > 1){
+	if (map_coords.x < 0 || map_coords.x > 1 || map_coords.y < 0 || map_coords.y > 1 || light_pos.z < 0){
 		return 1.0;
 	}
 
 	float z_pos = light_pos.z / light_pos.w;
 
 	float depth = (texture(shadow_map, map_coords)).r;
-	
-	//return 1.0;
 
-	if (depth == 0.0) {
+	if (depth == 0.0 || depth == 1.0) {
 		return 1.0;
 	} else if (depth < z_pos + 0.001){
 		return 0.5;

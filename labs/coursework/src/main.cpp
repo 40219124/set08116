@@ -215,7 +215,7 @@ bool load_content() {
 	}
 	// Set spot light properties
 	sLight.set_direction(normalize(vec3(0.0f, -1.0f, 0.0f)));
-	sLight.set_position(vec3(0.0f, 80.0f, 0.0f));
+	sLight.set_position(vec3(0.0f, 120.0f, 0.0f));
 	sLight.set_light_colour(vec4(0.8f, 0.7f, 0.1f, 1.0f));
 	sLight.set_range(160.0f);
 	sLight.set_power(5.0f);
@@ -565,18 +565,23 @@ void renderSimpleObject(mesh *obj, const mat4 &V, const mat4 &P, const mat4 &lV,
 	renderer::render(*obj);
 }
 // Renders a mesh
-void renderObject(mesh *obj, const mat4 &V, const mat4 &P, const mat4 &lV, const mat4 &lP) {
+void renderObject(mesh *obj, const mat4 &VP, const mat4 &lVP) {
+	static texture* prev_tex;
+	static material prev_mat;
 	mat4 M, MVP, lMVP;
 	mat3 N;
 	transformHierarchy(obj, M, N);
-	MVP = P * (V * M);
-	lMVP = lP * (lV * M);
+	MVP = VP * M;
+	lMVP = lVP * M;
 	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 	glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(N));
 	glUniformMatrix4fv(eff.get_uniform_location("lMVP"), 1, GL_FALSE, value_ptr(lMVP));
-	renderer::bind(*texs[obj], 0);
-	glUniform1i(eff.get_uniform_location("tex"), 0);
+	if (prev_tex != texs[obj]) {
+		prev_tex = texs[obj];
+		renderer::bind(*prev_tex, 0);
+		glUniform1i(eff.get_uniform_location("tex"), 0);
+	}
 	if (norms[obj] != nullptr) {
 		renderer::bind(*norms[obj], 1);
 		glUniform1i(eff.get_uniform_location("normal_map"), 1);
@@ -586,20 +591,20 @@ void renderObject(mesh *obj, const mat4 &V, const mat4 &P, const mat4 &lV, const
 	renderer::render(*obj);
 }
 // Renders the shadow buffer for a mesh
-void renderShadow(mesh *obj, const mat4 &lV, const mat4 &lP) {
+void renderShadow(mesh *obj, const mat4 &lVP) {
 	mat4 M, MVP;
 	mat3 dc;
 	transformHierarchy(obj, M, dc);
-	MVP = lP * (lV * M);
+	MVP = lVP * M;
 	glUniformMatrix4fv(shadow_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	renderer::render(*obj);
 }
 
 bool render() {
 	//Declare matrices
-	mat4 M, V, P, MVP;
+	mat4 M, V, P, VP, MVP;
 	mat3 N;
-	mat4 lV, lP, lMVP;
+	mat4 lV, lP, lVP, lMVP;
 	vec3 cam_pos;
 
 
@@ -611,20 +616,21 @@ bool render() {
 
 	lV = shadow.get_view();
 	lP = perspective<float>(half_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
+	lVP = lP * lV;
 	for (pair<const string, mesh> &item : sphereRing) {
-		renderShadow(&item.second, lV, lP);
+		renderShadow(&item.second, lVP);
 	}
 	for (pair<const string, mesh> &item : sphereRing2) {
-		renderShadow(&item.second, lV, lP);
+		renderShadow(&item.second, lVP);
 	}
 	for (pair<const string, mesh> &item : sphereRing3) {
-		renderShadow(&item.second, lV, lP);
+		renderShadow(&item.second, lVP);
 	}
 	for (pair<const string, mesh> &item : sphereRing4) {
-		renderShadow(&item.second, lV, lP);
+		renderShadow(&item.second, lVP);
 	}
-	renderShadow(&ground, lV, lP);
-	renderShadow(&column, lV, lP);
+	renderShadow(&ground, lVP);
+	renderShadow(&column, lVP);
 
 	glCullFace(GL_BACK);
 	shadowMap = shadow.buffer->get_depth();
@@ -634,12 +640,13 @@ bool render() {
 	renderer::clear();
 
 	renderCams(V, P, cam_pos);
+	VP = P * V;
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
 	glDisable(GL_CULL_FACE);
 	renderer::bind(sky_eff);
 	M = skyBox.get_transform().get_transform_matrix();
-	MVP = P * (V * M);
+	MVP = VP * M;
 	glUniformMatrix4fv(sky_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	renderer::bind(setting, 0);
 	glUniform1i(sky_eff.get_uniform_location("cubemap"), 0);
@@ -659,21 +666,22 @@ bool render() {
 	renderer::bind(sLight, "spot");
 	//Get camera information
 	glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(cam_pos));
-	renderObject(&column, V, P, lV, lP);
-	renderObject(&hill, V, P, lV, lP);
-	//renderObject(&ground, V, P, lV, lP);
+	renderObject(&column, VP, lVP);
+	renderObject(&hill, VP, lVP);
+	//renderObject(&ground, VP, lVP);
+
 	//Render the sphere meshes
 	for (pair<const string, mesh> &item : sphereRing) {
-		renderObject(&item.second, V, P, lV, lP);
+		renderObject(&item.second, VP, lVP);
 	}
 	for (pair<const string, mesh> &item : sphereRing2) {
-		renderObject(&item.second, V, P, lV, lP);
+		renderObject(&item.second, VP, lVP);
 	}
 	for (pair<const string, mesh> &item : sphereRing3) {
-		renderObject(&item.second, V, P, lV, lP);
+		renderObject(&item.second, VP, lVP);
 	}
 	for (pair<const string, mesh> &item : sphereRing4) {
-		renderObject(&item.second, V, P, lV, lP);
+		renderObject(&item.second, VP, lVP);
 	}
 
 	renderer::set_render_target();
