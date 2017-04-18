@@ -177,7 +177,7 @@ bool load_content() {
 
 	// Set information for the first sphere ring
 	sphereRing["sphere0"].get_transform().translate(vec3(0.0f, 1.7f, 0.0f));
-	sphereRing["sphere0"].get_transform().scale = vec3(1.0f / (5.0f * sphereScale));
+	sphereRing["sphere0"].get_transform().scale = vec3(1.0f / (25.0f * sphereScale));
 	meshHierarchy[&sphereRing["sphere0"]] = &column;
 
 	// Set information for the second sphere ring
@@ -215,7 +215,7 @@ bool load_content() {
 	}
 	// Set spot light properties
 	sLight.set_direction(normalize(vec3(0.0f, -1.0f, 0.0f)));
-	sLight.set_position(vec3(0.0f, 120.0f, 0.0f));
+	sLight.set_position(vec3(0.0f, 110.0f, 0.0f));
 	sLight.set_light_colour(vec4(0.8f, 0.7f, 0.1f, 1.0f));
 	sLight.set_range(160.0f);
 	sLight.set_power(5.0f);
