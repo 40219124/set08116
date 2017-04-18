@@ -36,6 +36,7 @@ effect eff;
 effect simple_eff;
 effect shadow_eff;
 effect sky_eff;
+effect screen_eff;
 // Cameras
 target_camera target_c;
 free_camera free_c;
@@ -249,6 +250,11 @@ bool load_content() {
 	sky_eff.add_shader("shaders/main_skybox.vert", GL_VERTEX_SHADER);
 	sky_eff.add_shader("shaders/main_skybox.frag", GL_FRAGMENT_SHADER);
 	sky_eff.build();
+
+	// Create screen effect
+	screen_eff.add_shader("shaders/main_screenspace.vert", GL_VERTEX_SHADER);
+	screen_eff.add_shader("shaders/main_screenspace.frag", GL_FRAGMENT_SHADER);
+	screen_eff.build();
 
 	// Set target camera properties 
 	target_c.set_position(vec3(-80.0f, 30.0f, 0.0f));
@@ -596,20 +602,6 @@ bool render() {
 	mat4 lV, lP, lMVP;
 	vec3 cam_pos;
 
-	renderCams(V, P, cam_pos);
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask(GL_FALSE);
-	glDisable(GL_CULL_FACE);
-	renderer::bind(sky_eff);
-	M = skyBox.get_transform().get_transform_matrix();
-	MVP = P * (V * M);
-	glUniformMatrix4fv(sky_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-	renderer::bind(setting, 0);
-	glUniform1i(sky_eff.get_uniform_location("cubemap"), 0);
-	renderer::render(skyBox);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glDepthMask(GL_TRUE);
 
 	// Shadows start!!!------------------------------------
 	renderer::set_render_target(shadow);
@@ -640,6 +632,22 @@ bool render() {
 
 	renderer::set_render_target(snap);
 	renderer::clear();
+
+	renderCams(V, P, cam_pos);
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	glDisable(GL_CULL_FACE);
+	renderer::bind(sky_eff);
+	M = skyBox.get_transform().get_transform_matrix();
+	MVP = P * (V * M);
+	glUniformMatrix4fv(sky_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	renderer::bind(setting, 0);
+	glUniform1i(sky_eff.get_uniform_location("cubemap"), 0);
+	renderer::render(skyBox);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glDepthMask(GL_TRUE);
+
 	// Bind effect
 	renderer::bind(eff);
 	renderer::bind(shadowMap, 5);
@@ -668,15 +676,8 @@ bool render() {
 		renderObject(&item.second, V, P, lV, lP);
 	}
 
-	renderer::bind(simple_eff);
-	//bind light
-	renderer::bind(pLight, "point");
-	renderer::bind(dLight, "direct");
-	renderer::bind(sLight, "spot");
-	glUniform1i(simple_eff.get_uniform_location("shadow_map"), 5);
-
 	renderer::set_render_target();
-	renderer::bind(sky_eff);
+	renderer::bind(screen_eff);
 	MVP = mat4(1.0f);
 	glUniformMatrix4fv(sky_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	renderer::bind(snap.get_frame(), 0);
