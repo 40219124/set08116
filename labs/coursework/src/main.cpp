@@ -239,8 +239,9 @@ bool load_content() {
 	texs[&terra] = &grass_tex;
 	norms[&terra] = &grass_norm;
 	// Transform terrain
-	terra.get_transform().scale = vec3(30.0f);
-	terra.get_transform().translate(vec3(0.0f, -48.0f, 0.0f));
+	float hill_scale = 90.0f;
+	terra.get_transform().scale = vec3(hill_scale, 30.0f, hill_scale);
+	terra.get_transform().translate(vec3(0.0f, -49.0f, 0.0f));
 
 	// Make the quad for rendering to screen region
 	vector<vec3> quad_pos = { vec3(-1.0f, -1.0f, 0.0f),  vec3(1.0f, -1.0f, 0.0f),  vec3(-1.0f, 1.0f, 0.0f),  vec3(1.0f, 1.0f, 0.0f) };
