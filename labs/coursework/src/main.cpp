@@ -14,6 +14,7 @@ map<string, mesh> sphereRing4;
 mesh skyBox;
 mesh ground;
 mesh hill;
+mesh terra;
 mesh column;
 geometry polaroid;
 // Reference maps
@@ -84,7 +85,7 @@ void freeCamHelp(vec3 target) {
 	free_c.set_pitch(pitch);
 }
 //make a map of spheres
-void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) {
+void makeSphereStructure(map<string, mesh> *sphereStructure, float sphereCount) {
 	// Create the parent sphere
 	static mesh technosphere = mesh(geometry("models/Technosphere_4.obj"));
 	static texture sphere_tex = texture("textures/sphere color.jpg");
@@ -125,6 +126,81 @@ void makeSphereStructure(map<string, mesh>* sphereStructure, float sphereCount) 
 		meshHierarchy[sphere] = &(*sphereStructure)["sphere0"];
 	}
 }
+// Create terrain from a texture
+void generate_terrain(geometry &geom, const texture &height_map, int width, int depth, float height_scale) {
+	vector<vec3> positions;
+	vector<vec3> normals;
+	vector<vec2> tex_coords;
+	vector<unsigned int> indices;
+
+	glBindTexture(GL_TEXTURE_2D, height_map.get_id());
+	vec4* data = new vec4[height_map.get_width() * height_map.get_height()];
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, (void*)data);
+
+	float width_ratio = static_cast<float>(width) / static_cast<float>(height_map.get_width());
+	float depth_ratio = static_cast<float>(depth) / static_cast<float>(height_map.get_height());
+
+	vec3 point;
+
+	for (int i = 0; i < height_map.get_width(); ++i) {
+		point.x = -(width / 2.0f) + (width_ratio * static_cast<float>(i));
+		for (int j = 0; j < height_map.get_height(); ++j) {
+			point.z = -(depth / 2.0f) + (depth_ratio * static_cast<float>(j));
+			point.y = data[(j * height_map.get_width()) + i].y * height_scale;
+			positions.push_back(point);
+		}
+	}
+
+	for (int i = 0; i < height_map.get_width() - 1; ++i) {
+		for (int j = 0; j < height_map.get_height() - 1; ++j) {
+			int tl = (j * height_map.get_width()) + i;
+			int tr = (j * height_map.get_width()) + i + 1;
+			int bl = ((j+1) * height_map.get_width()) + i;
+			int br = ((j+1) * height_map.get_width()) + i + 1;
+
+			indices.push_back(tl);
+			indices.push_back(br);
+			indices.push_back(bl);
+
+			indices.push_back(tl);
+			indices.push_back(tr);
+			indices.push_back(br);
+		}
+	}
+
+	normals.resize(positions.size());
+
+	for (unsigned int i = 0; i < indices.size() / 3; ++i) {
+		unsigned int p1 = indices[i * 3];
+		unsigned int p2 = indices[i * 3 + 1];
+		unsigned int p3 = indices[i * 3 + 2];
+
+		vec3 side1 = positions[p1] - positions[p3];
+		vec3 side2 = positions[p1] - positions[p2];
+
+		vec3 norm = normalize(cross(side2, side1));
+
+		normals[p1] += norm;
+		normals[p2] += norm;
+		normals[p3] += norm;
+	}
+
+	for (vec3 &n : normals) {
+		normalize(n);
+	}
+
+	for (int i = 0; i < height_map.get_width(); ++i) {
+		for (int j = 0; j < height_map.get_width(); ++j) {
+			tex_coords.push_back(vec2(width_ratio * i, depth_ratio * j));
+		}
+	}
+
+	geom.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
+	geom.add_buffer(normals, BUFFER_INDEXES::NORMAL_BUFFER);
+	geom.add_buffer(tex_coords, BUFFER_INDEXES::TEXTURE_COORDS_0);
+
+	delete[] data;
+}
 
 bool load_content() {
 	// Loads in a texture   
@@ -153,6 +229,13 @@ bool load_content() {
 
 	texs[&hill] = &grass_tex;
 	norms[&hill] = &grass_norm;
+
+
+	geometry terr;
+	generate_terrain(terr, texture("textures/my_hill_2.png"), 40, 40, 3.0f);
+	terra = mesh(terr);
+	texs[&terra] = &grass_tex;
+	norms[&terra] = &grass_norm;
 
 	// Make the quad for rendering to screen region
 	vector<vec3> quad_pos = { vec3(-1.0f, -1.0f, 0.0f),  vec3(1.0f, -1.0f, 0.0f),  vec3(-1.0f, 1.0f, 0.0f),  vec3(1.0f, 1.0f, 0.0f) };
@@ -629,7 +712,7 @@ bool render() {
 	for (pair<const string, mesh> &item : sphereRing4) {
 		renderShadow(&item.second, lVP);
 	}
-	renderShadow(&ground, lVP);
+	//renderShadow(&ground, lVP);
 	renderShadow(&column, lVP);
 
 	glCullFace(GL_BACK);
@@ -667,7 +750,8 @@ bool render() {
 	//Get camera information
 	glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(cam_pos));
 	renderObject(&column, VP, lVP);
-	renderObject(&hill, VP, lVP);
+	renderObject(&terra, VP, lVP);
+	//renderObject(&hill, VP, lVP);
 	//renderObject(&ground, VP, lVP);
 
 	//Render the sphere meshes
