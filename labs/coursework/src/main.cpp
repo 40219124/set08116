@@ -134,29 +134,30 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 	vector<unsigned int> indices;
 
 	glBindTexture(GL_TEXTURE_2D, height_map.get_id());
-	vec4* data = new vec4[height_map.get_width() * height_map.get_height()];
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, (void*)data);
+	auto data = new vec4[height_map.get_width() * height_map.get_height()];
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, (void *)data);
 
 	float width_ratio = static_cast<float>(width) / static_cast<float>(height_map.get_width());
 	float depth_ratio = static_cast<float>(depth) / static_cast<float>(height_map.get_height());
 
 	vec3 point;
 
-	for (int i = 0; i < height_map.get_width(); ++i) {
-		point.x = -(width / 2.0f) + (width_ratio * static_cast<float>(i));
-		for (int j = 0; j < height_map.get_height(); ++j) {
-			point.z = -(depth / 2.0f) + (depth_ratio * static_cast<float>(j));
-			point.y = data[(j * height_map.get_width()) + i].y * height_scale;
+	for (int x = 0; x < height_map.get_width(); ++x) {
+		point.x = -(width / 2.0f) + (width_ratio * static_cast<float>(x));
+
+		for (int z = 0; z < height_map.get_height(); ++z) {
+			point.z = -(depth / 2.0f) + (depth_ratio * static_cast<float>(z));
+			point.y = data[(z * height_map.get_width()) + x].y * height_scale;
 			positions.push_back(point);
 		}
 	}
 
-	for (int i = 0; i < height_map.get_width() - 1; ++i) {
-		for (int j = 0; j < height_map.get_height() - 1; ++j) {
-			int tl = (j * height_map.get_width()) + i;
-			int tr = (j * height_map.get_width()) + i + 1;
-			int bl = ((j+1) * height_map.get_width()) + i;
-			int br = ((j+1) * height_map.get_width()) + i + 1;
+	for (unsigned int x = 0; x < height_map.get_width() - 1; ++x) {
+		for (unsigned int y = 0; y < height_map.get_height() - 1; ++y) {
+			unsigned int tl = (y * height_map.get_width()) + x;
+			unsigned int tr = (y * height_map.get_width()) + x + 1;
+			unsigned int bl = ((y + 1) * height_map.get_width()) + x;
+			unsigned int br = ((y + 1) * height_map.get_width()) + x + 1;
 
 			indices.push_back(tl);
 			indices.push_back(br);
@@ -171,9 +172,9 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 	normals.resize(positions.size());
 
 	for (unsigned int i = 0; i < indices.size() / 3; ++i) {
-		unsigned int p1 = indices[i * 3];
-		unsigned int p2 = indices[i * 3 + 1];
-		unsigned int p3 = indices[i * 3 + 2];
+		auto p1 = indices[i * 3];
+		auto p2 = indices[i * 3 + 1];
+		auto p3 = indices[i * 3 + 2];
 
 		vec3 side1 = positions[p1] - positions[p3];
 		vec3 side2 = positions[p1] - positions[p2];
@@ -185,19 +186,20 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 		normals[p3] += norm;
 	}
 
-	for (vec3 &n : normals) {
+	for (auto &n : normals) {
 		normalize(n);
 	}
 
-	for (int i = 0; i < height_map.get_width(); ++i) {
-		for (int j = 0; j < height_map.get_width(); ++j) {
-			tex_coords.push_back(vec2(width_ratio * i, depth_ratio * j));
+	for (unsigned int x = 0; x < height_map.get_width(); ++x) {
+		for (unsigned int z = 0; z < height_map.get_height(); ++z) {
+			tex_coords.push_back(vec2(width_ratio * x, depth_ratio * z));
 		}
 	}
 
 	geom.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
 	geom.add_buffer(normals, BUFFER_INDEXES::NORMAL_BUFFER);
 	geom.add_buffer(tex_coords, BUFFER_INDEXES::TEXTURE_COORDS_0);
+	geom.add_index_buffer(indices);
 
 	delete[] data;
 }
@@ -232,10 +234,12 @@ bool load_content() {
 
 
 	geometry terr;
-	generate_terrain(terr, texture("textures/my_hill_2.png"), 40, 40, 3.0f);
+	texture contours = texture("textures/my_hill_2.png");
+	generate_terrain(terr, contours, 40, 40, 3.0f);
 	terra = mesh(terr);
 	texs[&terra] = &grass_tex;
 	norms[&terra] = &grass_norm;
+	terra.get_transform().scale = vec3(10.0f);
 
 	// Make the quad for rendering to screen region
 	vector<vec3> quad_pos = { vec3(-1.0f, -1.0f, 0.0f),  vec3(1.0f, -1.0f, 0.0f),  vec3(-1.0f, 1.0f, 0.0f),  vec3(1.0f, 1.0f, 0.0f) };
