@@ -144,6 +144,7 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 
 	vec3 point;
 
+	// Positions
 	for (int x = 0; x < height_map.get_width(); ++x) {
 		point.x = -(width / 2.0f) + (width_ratio * static_cast<float>(x));
 
@@ -154,6 +155,7 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 		}
 	}
 
+	// Indices
 	for (unsigned int x = 0; x < height_map.get_width() - 1; ++x) {
 		for (unsigned int y = 0; y < height_map.get_height() - 1; ++y) {
 			unsigned int tl = (y * height_map.get_width()) + x;
@@ -171,10 +173,12 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 		}
 	}
 
+	// Resize NBT vectors
 	normals.resize(positions.size());
 	binormals.resize(positions.size());
 	tangents.resize(positions.size());
 
+	// Normals
 	for (unsigned int i = 0; i < indices.size() / 3; ++i) {
 		auto p1 = indices[i * 3];
 		auto p2 = indices[i * 3 + 1];
@@ -190,6 +194,7 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 		normals[p3] += norm;
 	}
 
+	// BT's
 	for (auto &n : normals) {
 		static int i = 0;
 		n = normalize(n);
@@ -198,12 +203,14 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 		++i;
 	}
 
+	// Tex_coords
 	for (unsigned int x = 0; x < height_map.get_width(); ++x) {
 		for (unsigned int z = 0; z < height_map.get_height(); ++z) {
 			tex_coords.push_back(vec2(width_ratio * x, depth_ratio * z));
 		}
 	}
 
+	// Buffers
 	geom.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
 	geom.add_buffer(normals, BUFFER_INDEXES::NORMAL_BUFFER);
 	geom.add_buffer(tangents, BUFFER_INDEXES::TANGENT_BUFFER);
@@ -211,6 +218,7 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 	geom.add_buffer(tex_coords, BUFFER_INDEXES::TEXTURE_COORDS_0);
 	geom.add_index_buffer(indices);
 
+	// Memory clean up
 	delete[] data;
 }
 
