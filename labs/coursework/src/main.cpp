@@ -226,31 +226,21 @@ bool load_content() {
 		"textures/negy.jpg",  "textures/posz.jpg",  "textures/negz.jpg" };
 	setting = cubemap(box_files);
 
-	// Make the plane
+	// Load grass textures
 	static texture grass_tex = texture("textures/grass01.jpg");
 	static texture grass_norm = texture("textures/grass01_n.jpg");
-	ground = mesh(geometry_builder().create_plane(100.0f, 100.0f));
-	ground.get_transform().scale = vec3(20.0f);
-	// Make hill
-	hill = ground;
-	ground.get_transform().translate(vec3(80.0f, 50.0f, 0.0f));
-	ground.get_transform().rotate(eulerAngleZ(half_pi<float>()));
-	ground.get_material().set_diffuse(vec4(0.5f, 0.5f, 0.1f, 1.0f));
-	texs[&ground] = &grass_tex;
-	norms[&ground] = &grass_norm;
-
-	texs[&hill] = &grass_tex;
-	norms[&hill] = &grass_norm;
 
 	// Make the hill from a height map
 	geometry terr;
 	texture contours = texture("textures/my_hill_2.png");
-	generate_terrain(terr, contours, 20, 20, 3.0f);
+	generate_terrain(terr, contours, 20, 20, 2.0f);
 	terra = mesh(terr);
+	// Map stuff
 	texs[&terra] = &grass_tex;
 	norms[&terra] = &grass_norm;
+	// Transform terrain
 	terra.get_transform().scale = vec3(30.0f);
-	terra.get_transform().translate(vec3(0.0f, -50.0f, 0.0f));
+	terra.get_transform().translate(vec3(0.0f, -48.0f, 0.0f));
 
 	// Make the quad for rendering to screen region
 	vector<vec3> quad_pos = { vec3(-1.0f, -1.0f, 0.0f),  vec3(1.0f, -1.0f, 0.0f),  vec3(-1.0f, 1.0f, 0.0f),  vec3(1.0f, 1.0f, 0.0f) };
@@ -313,7 +303,7 @@ bool load_content() {
 	}
 	// Set spot light properties
 	sLight.set_direction(normalize(vec3(0.0f, -1.0f, 0.0f)));
-	sLight.set_position(vec3(0.0f, 50.0f, 0.0f));
+	sLight.set_position(vec3(0.0f, 90.0f, 0.0f));
 	sLight.set_light_colour(vec4(0.8f, 0.7f, 0.1f, 1.0f));
 	sLight.set_range(160.0f);
 	sLight.set_power(5.0f);
@@ -727,7 +717,6 @@ bool render() {
 	for (pair<const string, mesh> &item : sphereRing4) {
 		renderShadow(&item.second, lVP);
 	}
-	//renderShadow(&ground, lVP);
 	renderShadow(&column, lVP);
 
 	glCullFace(GL_BACK);
@@ -766,8 +755,6 @@ bool render() {
 	glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(cam_pos));
 	renderObject(&column, VP, lVP);
 	renderObject(&terra, VP, lVP);
-	//renderObject(&hill, VP, lVP);
-	//renderObject(&ground, VP, lVP);
 
 	//Render the sphere meshes
 	for (pair<const string, mesh> &item : sphereRing) {
