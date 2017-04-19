@@ -130,6 +130,8 @@ void makeSphereStructure(map<string, mesh> *sphereStructure, float sphereCount) 
 void generate_terrain(geometry &geom, const texture &height_map, int width, int depth, float height_scale) {
 	vector<vec3> positions;
 	vector<vec3> normals;
+	vector<vec3> tangents;
+	vector<vec3> binormals;
 	vector<vec2> tex_coords;
 	vector<unsigned int> indices;
 
@@ -170,6 +172,8 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 	}
 
 	normals.resize(positions.size());
+	binormals.resize(positions.size());
+	tangents.resize(positions.size());
 
 	for (unsigned int i = 0; i < indices.size() / 3; ++i) {
 		auto p1 = indices[i * 3];
@@ -187,7 +191,11 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 	}
 
 	for (auto &n : normals) {
-		normalize(n);
+		static int i = 0;
+		n = normalize(n);
+		binormals[i] = normalize(cross(vec3(0.0f, 0.0f, 1.0f), n));
+		tangents[i] = normalize(cross(binormals[i], n));
+		++i;
 	}
 
 	for (unsigned int x = 0; x < height_map.get_width(); ++x) {
@@ -198,6 +206,8 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 
 	geom.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
 	geom.add_buffer(normals, BUFFER_INDEXES::NORMAL_BUFFER);
+	geom.add_buffer(tangents, BUFFER_INDEXES::TANGENT_BUFFER);
+	geom.add_buffer(binormals, BUFFER_INDEXES::BINORMAL_BUFFER);
 	geom.add_buffer(tex_coords, BUFFER_INDEXES::TEXTURE_COORDS_0);
 	geom.add_index_buffer(indices);
 
@@ -232,14 +242,15 @@ bool load_content() {
 	texs[&hill] = &grass_tex;
 	norms[&hill] = &grass_norm;
 
-
+	// Make the hill from a height map
 	geometry terr;
 	texture contours = texture("textures/my_hill_2.png");
-	generate_terrain(terr, contours, 40, 40, 3.0f);
+	generate_terrain(terr, contours, 20, 20, 3.0f);
 	terra = mesh(terr);
 	texs[&terra] = &grass_tex;
 	norms[&terra] = &grass_norm;
-	terra.get_transform().scale = vec3(10.0f);
+	terra.get_transform().scale = vec3(30.0f);
+	terra.get_transform().translate(vec3(0.0f, -50.0f, 0.0f));
 
 	// Make the quad for rendering to screen region
 	vector<vec3> quad_pos = { vec3(-1.0f, -1.0f, 0.0f),  vec3(1.0f, -1.0f, 0.0f),  vec3(-1.0f, 1.0f, 0.0f),  vec3(1.0f, 1.0f, 0.0f) };
@@ -302,7 +313,7 @@ bool load_content() {
 	}
 	// Set spot light properties
 	sLight.set_direction(normalize(vec3(0.0f, -1.0f, 0.0f)));
-	sLight.set_position(vec3(0.0f, 110.0f, 0.0f));
+	sLight.set_position(vec3(0.0f, 50.0f, 0.0f));
 	sLight.set_light_colour(vec4(0.8f, 0.7f, 0.1f, 1.0f));
 	sLight.set_range(160.0f);
 	sLight.set_power(5.0f);
