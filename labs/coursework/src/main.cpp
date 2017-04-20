@@ -28,6 +28,7 @@ spot_light sLight;
 // Buffers
 shadow_map shadow;
 frame_buffer snap;
+frame_buffer shady;
 // Texture
 texture tex;
 texture shadowMap;
@@ -41,6 +42,7 @@ effect screen_eff;
 // Cameras
 target_camera target_c;
 free_camera free_c;
+target_camera fcam;
 // camera boolean
 uint cam_state = 0;
 // Mouse positions
@@ -135,10 +137,12 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 	vector<vec2> tex_coords;
 	vector<unsigned int> indices;
 
+	// Put height map data in an array
 	glBindTexture(GL_TEXTURE_2D, height_map.get_id());
 	auto data = new vec4[height_map.get_width() * height_map.get_height()];
 	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, (void *)data);
 
+	// Calculate object to texture ratio
 	float width_ratio = static_cast<float>(width) / static_cast<float>(height_map.get_width());
 	float depth_ratio = static_cast<float>(depth) / static_cast<float>(height_map.get_height());
 
@@ -194,7 +198,7 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 		normals[p3] += norm;
 	}
 
-	// BT's
+	// BT's and normalising normals
 	for (auto &n : normals) {
 		static int i = 0;
 		n = normalize(n);
@@ -320,7 +324,7 @@ bool load_content() {
 	// Load in shaders
 	eff.add_shader("shaders/main_all.vert", GL_VERTEX_SHADER);
 	vector<string> frags{ "shaders/main_all.frag", "shaders/part_directional.frag",
-		"shaders/part_point.frag", "shaders/part_spot.frag", "shaders/part_shadow.frag",
+		"shaders/part_point.frag", "shaders/part_spot.frag", "shaders/part_shadows.frag",
 		"shaders/part_normal.frag" };
 	eff.add_shader(frags, GL_FRAGMENT_SHADER);
 	// Build effect
@@ -329,6 +333,7 @@ bool load_content() {
 	// Set shadow properties
 	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
 	snap = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+	shady = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
 
 	// Load in shadow shaders
 	shadow_eff.add_shader("shaders/main_shadows.vert", GL_VERTEX_SHADER);
@@ -362,6 +367,10 @@ bool load_content() {
 	free_c.set_target(vec3(0.0f, 0.0f, 0.0f));
 	freeCamHelp(free_c.get_target());
 	free_c.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
+
+	fcam.set_position(vec3(0.0f, 90.0f, 0.0f));
+	fcam.set_target(vec3(0.0f, 0.0f, 1.0f));
+	fcam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 
 	return true;
 }
@@ -552,7 +561,7 @@ void sky_follow() {
 
 bool update(float delta_time) {
 	//print fps
-	//cout << 1.0f / delta_time << endl;
+	cout << 1.0f / delta_time << endl;
 	// Cumulative total of time
 	static float time_total = 0.0f;
 	time_total += delta_time;
@@ -587,8 +596,6 @@ bool update(float delta_time) {
 	transform_spheres(delta_time, time_total, &sphereRing2);
 	transform_spheres(delta_time, time_total, &sphereRing3);
 	transform_spheres(delta_time, time_total, &sphereRing4);
-	// Rotate the central sphere on the x axis
-	//sphereRing["sphere0"].get_transform().orientation = (rotate(quat(), delta_time / 2.0f, vec3(1.0f, 0.0f, 0.0f)) * sphereRing["sphere0"].get_transform().orientation);
 
 	// Set the shadow to equal the values of the spot light
 	shadow.light_position = sLight.get_position();
@@ -604,6 +611,7 @@ bool update(float delta_time) {
 		cout << ground.get_transform().position.x << endl;
 	}
 	sky_follow();
+	fcam.update(delta_time);
 	return true;
 }
 // Aquire the transformation matrix of a child object 
@@ -696,6 +704,17 @@ void renderShadow(mesh *obj, const mat4 &lVP) {
 	glUniformMatrix4fv(shadow_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	renderer::render(*obj);
 }
+// Renders the shadow buffer for a mesh
+void renderShady(mesh *obj, const mat4 &lVP, const mat4 lV) {
+	mat4 M, MVP;
+	mat3 dc;
+	transformHierarchy(obj, M, dc);
+	MVP = lVP * M;
+	glUniformMatrix4fv(shadow_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	glUniformMatrix4fv(shadow_eff.get_uniform_location("MV"), 1, GL_FALSE, value_ptr(lV * M));
+	glUniform3fv(shadow_eff.get_uniform_location("eye_pos"), 1, value_ptr(fcam.get_position()));
+	renderer::render(*obj);
+}
 
 bool render() {
 	//Declare matrices
@@ -704,33 +723,62 @@ bool render() {
 	mat4 lV, lP, lVP, lMVP;
 	vec3 cam_pos;
 
+	 
+	if (false == true) {
+		// Shadows start!!!------------------------------------
+		renderer::set_render_target(shadow);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		//glCullFace(GL_FRONT);
+		renderer::bind(shadow_eff);
 
-	// Shadows start!!!------------------------------------
-	renderer::set_render_target(shadow);
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glCullFace(GL_FRONT);
-	renderer::bind(shadow_eff);
+		lV = shadow.get_view();
+		lP = perspective<float>(half_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
+		lVP = lP * lV;
+		for (pair<const string, mesh> &item : sphereRing) {
+			renderShadow(&item.second, lVP);
+		}
+		for (pair<const string, mesh> &item : sphereRing2) {
+			renderShadow(&item.second, lVP);
+		}
+		for (pair<const string, mesh> &item : sphereRing3) {
+			renderShadow(&item.second, lVP);
+		}
+		for (pair<const string, mesh> &item : sphereRing4) {
+			renderShadow(&item.second, lVP);
+		}
+		renderShadow(&column, lVP);
 
-	lV = shadow.get_view();
-	lP = perspective<float>(half_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
-	lVP = lP * lV;
-	for (pair<const string, mesh> &item : sphereRing) {
-		renderShadow(&item.second, lVP);
+		//glCullFace(GL_BACK);
+		shadowMap = shadow.buffer->get_depth();
+		// stop shadows!!!-------------------------------
 	}
-	for (pair<const string, mesh> &item : sphereRing2) {
-		renderShadow(&item.second, lVP);
-	}
-	for (pair<const string, mesh> &item : sphereRing3) {
-		renderShadow(&item.second, lVP);
-	}
-	for (pair<const string, mesh> &item : sphereRing4) {
-		renderShadow(&item.second, lVP);
-	}
-	renderShadow(&column, lVP);
+	else {
+		renderer::set_render_target(shady);
+		renderer::clear();
+		//glCullFace(GL_FRONT);
+		renderer::bind(shadow_eff);
 
-	glCullFace(GL_BACK);
-	shadowMap = shadow.buffer->get_depth();
-	// stop shadows!!!-------------------------------
+		lV = fcam.get_view();
+		lP = fcam.get_projection();
+		lVP = lP * lV;
+		for (pair<const string, mesh> &item : sphereRing) {
+			renderShady(&item.second, lVP, lV);
+		}
+		for (pair<const string, mesh> &item : sphereRing2) {
+			renderShady(&item.second, lVP, lV);
+		}
+		for (pair<const string, mesh> &item : sphereRing3) {
+			renderShady(&item.second, lVP, lV);
+		}
+		for (pair<const string, mesh> &item : sphereRing4) {
+			renderShady(&item.second, lVP, lV);
+		}
+		renderShady(&column, lVP, lV);
+
+		//glCullFace(GL_BACK);
+		shadowMap = shady.get_frame(); 
+	}
+	glClearColor(0.0, 1.0, 1.0, 1.0);
 
 	renderer::set_render_target(snap);
 	renderer::clear();
