@@ -242,6 +242,11 @@ bool load_content() {
 	static texture grass_tex = texture("textures/grass01.jpg");
 	static texture grass_norm = texture("textures/grass01_n.jpg");
 
+	ground = mesh(geometry_builder().create_plane());
+	ground.get_transform().scale = vec3(30.0f);
+	texs[&ground] = &grass_tex;
+	norms[&ground] = &grass_norm;
+
 	// Make the hill from a height map
 	geometry terr;
 	texture contours = texture("textures/my_hill_2.png");
@@ -343,8 +348,8 @@ bool load_content() {
 	// Create simpler effect
 	simple_eff.add_shader("shaders/main_simple.vert", GL_VERTEX_SHADER);
 	frags = { "shaders/main_simple.frag", "shaders/part_directional.frag",
-		"shaders/part_point.frag", "shaders/part_spot.frag", "shaders/part_shadow.frag" };
-	simple_eff.add_shader(frags, GL_FRAGMENT_SHADER);
+		"shaders/part_point.frag", "shaders/part_spot.frag", "shaders/part_shadows.frag" };
+	simple_eff.add_shader(frags, GL_FRAGMENT_SHADER); 
 	// Build effect
 	simple_eff.build();
 
@@ -603,11 +608,11 @@ bool update(float delta_time) {
 
 	// To move the back wall on the x-axis
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT)) {
-		ground.get_transform().translate(vec3(delta_time * -20.0f, 0.0f, 0.0f));
+		ground.get_transform().translate(vec3(0.0f, delta_time * -20.0f, 0.0f));
 		cout << ground.get_transform().position.x << endl;
 	}
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_RIGHT)) {
-		ground.get_transform().translate(vec3(delta_time * 20.0f, 0.0f, 0.0f));
+		ground.get_transform().translate(vec3(0.0f, delta_time * 20.0f, 0.0f));
 		cout << ground.get_transform().position.x << endl;
 	}
 	sky_follow();
@@ -723,7 +728,7 @@ bool render() {
 	mat4 lV, lP, lVP, lMVP;
 	vec3 cam_pos;
 
-	 
+
 	if (false == true) {
 		// Shadows start!!!------------------------------------
 		renderer::set_render_target(shadow);
@@ -776,7 +781,7 @@ bool render() {
 		renderShady(&column, lVP, lV);
 
 		//glCullFace(GL_BACK);
-		shadowMap = shady.get_frame(); 
+		shadowMap = shady.get_frame();
 	}
 	glClearColor(0.0, 1.0, 1.0, 1.0);
 
@@ -812,6 +817,7 @@ bool render() {
 	glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(cam_pos));
 	renderObject(&column, VP, lVP);
 	renderObject(&terra, VP, lVP);
+	renderObject(&ground, VP, lVP);
 
 	//Render the sphere meshes
 	for (pair<const string, mesh> &item : sphereRing) {
