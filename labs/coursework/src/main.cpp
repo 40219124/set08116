@@ -48,8 +48,7 @@ uint cam_state = 0;
 // Mouse positions
 double mouse_x;
 double mouse_y;
-// Disable skybox (debug boolean)
-bool noSky = true;
+float blurr = 0.002;
 
 //focus the free cam on a target location
 void freeCamHelp(vec3 target) {
@@ -92,6 +91,7 @@ void makeSphereStructure(map<string, mesh> *sphereStructure, float sphereCount) 
 	static mesh technosphere = mesh(geometry("models/Technosphere_4.obj"));
 	static texture sphere_tex = texture("textures/sphere color.jpg");
 	static texture sphere_norm = texture("textures/sphere normals.jpg");
+	technosphere = mesh(geometry_builder::create_sphere());
 	(*sphereStructure)["sphere0"] = technosphere;
 	(*sphereStructure)["sphere0"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	(*sphereStructure)["sphere0"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -616,6 +616,14 @@ bool update(float delta_time) {
 		ground.get_transform().translate(vec3(0.0f, delta_time * 20.0f, 0.0f));
 		cout << ground.get_transform().position.x << endl;
 	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_UP)) {
+		blurr *= 1.0f + 0.4f * delta_time;
+		cout << blurr << endl;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_DOWN)) { 
+		blurr *= 1.0f - 0.4f * delta_time;    
+		cout << blurr << endl;
+	}
 	sky_follow();
 	fcam.update(delta_time);
 	return true;
@@ -838,9 +846,10 @@ bool render() {
 	renderer::set_render_target();
 	renderer::bind(screen_eff);
 	MVP = mat4(1.0f);
-	glUniformMatrix4fv(sky_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	glUniformMatrix4fv(screen_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	renderer::bind(snap.get_frame(), 0);
-	glUniform1i(sky_eff.get_uniform_location("cubemap"), 0);
+	glUniform1i(screen_eff.get_uniform_location("tex"), 0);
+	glUniform1f(screen_eff.get_uniform_location("value"), blurr);
 	renderer::render(polaroid);
 
 	return true;
