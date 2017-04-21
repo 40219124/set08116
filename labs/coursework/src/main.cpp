@@ -785,7 +785,7 @@ bool render() {
 		//glCullFace(GL_BACK);
 		shadowMap = shady.get_frame();
 	}
- 	glClearColor(0.0, 1.0, 1.0, 1.0);
+	glClearColor(0.0, 1.0, 1.0, 1.0);
 	 
 	renderer::set_render_target(snap);
 	renderer::clear();
