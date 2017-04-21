@@ -752,7 +752,7 @@ bool render() {
 			renderShadow(&item.second, lVP);
 		}
 		renderShadow(&column, lVP);
-
+		
 		//glCullFace(GL_BACK);
 		shadowMap = shadow.buffer->get_depth();
 		// stop shadows!!!-------------------------------
@@ -783,10 +783,10 @@ bool render() {
 		//glCullFace(GL_BACK);
 		shadowMap = shady.get_frame();
 	}
-	glClearColor(0.0, 1.0, 1.0, 1.0);
-
+ 	glClearColor(0.0, 1.0, 1.0, 1.0);
+	 
 	renderer::set_render_target(snap);
-	renderer::clear();
+	renderer::clear(); 
 
 	renderCams(V, P, cam_pos);
 	VP = P * V;
