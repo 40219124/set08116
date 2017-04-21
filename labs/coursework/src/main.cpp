@@ -255,6 +255,7 @@ bool load_content() {
 	// Map stuff
 	texs[&terra] = &grass_tex;
 	norms[&terra] = &grass_norm;
+	meshHierarchy[&terra] = nullptr;
 	// Transform terrain
 	float hill_scale = 90.0f;
 	terra.get_transform().scale = vec3(hill_scale, 30.0f, hill_scale);
@@ -779,6 +780,7 @@ bool render() {
 			renderShady(&item.second, lVP, lV);
 		}
 		renderShady(&column, lVP, lV);
+		renderShady(&terra, lVP, lV);
 
 		//glCullFace(GL_BACK);
 		shadowMap = shady.get_frame();
@@ -786,7 +788,7 @@ bool render() {
  	glClearColor(0.0, 1.0, 1.0, 1.0);
 	 
 	renderer::set_render_target(snap);
-	renderer::clear(); 
+	renderer::clear();
 
 	renderCams(V, P, cam_pos);
 	VP = P * V;

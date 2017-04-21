@@ -75,7 +75,7 @@ void main () {
 	vec3 view_dir = normalize(eye_pos - world_pos);
 	vec4 tex_col = texture(tex, tex_coord_frag);
 	vec3 normal2 = normalMap(trans_normal, trans_binormal, trans_tangent, normal_map, tex_coord_frag);
-	
+	vec4 colour_spot;
 	colour = vec4(0.0f);
 	colour += calculateDirectionalLight(direct, mat, normal2, view_dir, tex_col);
 	colour += calculatePointLight(point, mat, world_pos, normal2, view_dir, tex_col);
