@@ -49,6 +49,10 @@ uint cam_state = 0;
 double mouse_x;
 double mouse_y;
 float blurr = 0.002;
+// post processing toggles
+int eff_state = 0;
+int neg_state = -1;
+int guides = -1;
 
 //focus the free cam on a target location
 void freeCamHelp(vec3 target) {
@@ -91,7 +95,7 @@ void makeSphereStructure(map<string, mesh> *sphereStructure, float sphereCount) 
 	static mesh technosphere = mesh(geometry("models/Technosphere_4.obj"));
 	static texture sphere_tex = texture("textures/sphere color.jpg");
 	static texture sphere_norm = texture("textures/sphere normals.jpg");
-	technosphere = mesh(geometry_builder::create_sphere());
+	//technosphere = mesh(geometry_builder::create_sphere());
 	(*sphereStructure)["sphere0"] = technosphere;
 	(*sphereStructure)["sphere0"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	(*sphereStructure)["sphere0"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -625,6 +629,36 @@ bool update(float delta_time) {
 		blurr *= 1.0f - 0.4f * delta_time;    
 		cout << blurr << endl;
 	}
+
+	// To toggle post processing
+	static bool key_i = false;
+	static bool key_g = false;
+	static bool key_b = false;
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_I) == GLFW_PRESS && !key_i) {
+		neg_state *= -1;
+		key_i = true;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_I) == GLFW_RELEASE && key_i) {
+		key_i = false;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_G) == GLFW_PRESS && !key_g) {
+		guides *= -1;
+		key_g = true;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_G) == GLFW_RELEASE && key_g) {
+		key_g = false;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_B) == GLFW_PRESS && !key_b) {
+		++eff_state;
+		if (eff_state > 3) {
+			eff_state = 0;
+		}
+		key_b = true;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_B) == GLFW_RELEASE && key_b) {
+		key_b = false;
+	}
+
 	sky_follow();
 	fcam.update(delta_time);
 	return true;
@@ -738,69 +772,42 @@ bool render() {
 	mat4 lV, lP, lVP, lMVP;
 	vec3 cam_pos;
 
+	renderer::set_render_target(shady);
+	renderer::clear();
+	//glCullFace(GL_FRONT);
+	renderer::bind(shadow_eff);
 
-	if (false == true) {
-		// Shadows start!!!------------------------------------
-		renderer::set_render_target(shadow);
-		glClear(GL_DEPTH_BUFFER_BIT);
-		//glCullFace(GL_FRONT);
-		renderer::bind(shadow_eff);
-
-		lV = shadow.get_view();
-		lP = perspective<float>(half_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
-		lVP = lP * lV;
-		for (pair<const string, mesh> &item : sphereRing) {
-			renderShadow(&item.second, lVP);
-		}
-		for (pair<const string, mesh> &item : sphereRing2) {
-			renderShadow(&item.second, lVP);
-		}
-		for (pair<const string, mesh> &item : sphereRing3) {
-			renderShadow(&item.second, lVP);
-		}
-		for (pair<const string, mesh> &item : sphereRing4) {
-			renderShadow(&item.second, lVP);
-		}
-		renderShadow(&column, lVP);
-		
-		//glCullFace(GL_BACK);
-		shadowMap = shadow.buffer->get_depth();
-		// stop shadows!!!-------------------------------
+	lV = fcam.get_view();
+	lP = fcam.get_projection();
+	lVP = lP * lV;
+	for (pair<const string, mesh> &item : sphereRing) {
+		renderShady(&item.second, lVP, lV);
 	}
-	else {
-		renderer::set_render_target(shady);
-		renderer::clear();
-		//glCullFace(GL_FRONT);
-		renderer::bind(shadow_eff);
-
-		lV = fcam.get_view();
-		lP = fcam.get_projection();
-		lVP = lP * lV;
-		for (pair<const string, mesh> &item : sphereRing) {
-			renderShady(&item.second, lVP, lV);
-		}
-		for (pair<const string, mesh> &item : sphereRing2) {
-			renderShady(&item.second, lVP, lV);
-		}
-		for (pair<const string, mesh> &item : sphereRing3) {
-			renderShady(&item.second, lVP, lV);
-		}
-		for (pair<const string, mesh> &item : sphereRing4) {
-			renderShady(&item.second, lVP, lV);
-		}
-		renderShady(&column, lVP, lV);
-		renderShady(&terra, lVP, lV);
-
-		//glCullFace(GL_BACK);
-		shadowMap = shady.get_frame();
+	for (pair<const string, mesh> &item : sphereRing2) {
+		renderShady(&item.second, lVP, lV);
 	}
+	for (pair<const string, mesh> &item : sphereRing3) {
+		renderShady(&item.second, lVP, lV);
+	}
+	for (pair<const string, mesh> &item : sphereRing4) {
+		renderShady(&item.second, lVP, lV);
+	}
+	renderShady(&column, lVP, lV);
+	renderShady(&terra, lVP, lV);
+
+	//glCullFace(GL_BACK);
+	shadowMap = shady.get_frame();
+
 	glClearColor(0.0, 1.0, 1.0, 1.0);
 	 
+	// begin rendering scene for first time
 	renderer::set_render_target(snap);
 	renderer::clear();
 
 	renderCams(V, P, cam_pos);
 	VP = P * V;
+
+	// Render the sky box
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
 	glDisable(GL_CULL_FACE);
@@ -828,7 +835,7 @@ bool render() {
 	glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(cam_pos));
 	renderObject(&column, VP, lVP);
 	renderObject(&terra, VP, lVP);
-	renderObject(&ground, VP, lVP);
+	//renderObject(&ground, VP, lVP);
 
 	//Render the sphere meshes
 	for (pair<const string, mesh> &item : sphereRing) {
@@ -844,6 +851,7 @@ bool render() {
 		renderObject(&item.second, VP, lVP);
 	}
 
+	// render scene with post processing
 	renderer::set_render_target();
 	renderer::setClearColour(0.0f, 0.0f, 0.0f);
 	renderer::bind(screen_eff);
@@ -852,6 +860,9 @@ bool render() {
 	renderer::bind(snap.get_frame(), 0);
 	glUniform1i(screen_eff.get_uniform_location("tex"), 0);
 	glUniform1f(screen_eff.get_uniform_location("value"), blurr);
+	glUniform1i(screen_eff.get_uniform_location("eff_state"), eff_state);
+	glUniform1i(screen_eff.get_uniform_location("neg_state"), neg_state);
+	glUniform1i(screen_eff.get_uniform_location("guides"), guides);
 	renderer::render(polaroid);
 
 	return true;
