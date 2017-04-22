@@ -853,7 +853,7 @@ bool render() {
 	for (pair<const string, mesh> &item : sphereRing) {
 		renderShady(&item.second, lVP, lV);
 	}
-	/*for (pair<const string, mesh> &item : sphereRing2) {
+	for (pair<const string, mesh> &item : sphereRing2) {
 		renderShady(&item.second, lVP, lV);
 	}
 	for (pair<const string, mesh> &item : sphereRing3) {
@@ -861,76 +861,76 @@ bool render() {
 	}
 	for (pair<const string, mesh> &item : sphereRing4) {
 		renderShady(&item.second, lVP, lV);
-	}*/
+	}
 	renderShady(&column, lVP, lV);
 	renderShady(&terra, lVP, lV);
 
 	//glCullFace(GL_BACK);
 	shadowMap = shady.get_frame();
 
+	renderCams(V, P, cam_pos);
 	// render the reflection view
-	//if (free_c.get_position().z > mirror.get_transform().position.z) {
-	renderer::set_render_target(reflection);
-	renderer::clear();
+	if (cam_pos.z > mirror.get_transform().position.z) {
+		renderer::set_render_target(reflection);
+		renderer::clear();
 
-	mat4 aV = anti_cam.get_view();
-	mat4 aP = anti_cam.get_projection();
-	vec3 acam_pos = anti_cam.get_position();
-	mat4 aVP = aP * aV;
+		mat4 aV = anti_cam.get_view();
+		mat4 aP = anti_cam.get_projection();
+		vec3 acam_pos = anti_cam.get_position();
+		mat4 aVP = aP * aV;
 
-	// Render the sky box
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask(GL_FALSE);
-	glDisable(GL_CULL_FACE);
-	renderer::bind(sky_eff);
-	skyBox.get_transform().position = acam_pos;
-	M = skyBox.get_transform().get_transform_matrix();
-	MVP = aVP * M;
-	glUniformMatrix4fv(sky_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-	renderer::bind(setting, 0);
-	glUniform1i(sky_eff.get_uniform_location("cubemap"), 0);
-	renderer::render(skyBox);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glDepthMask(GL_TRUE);
+		// Render the sky box
+		glDisable(GL_DEPTH_TEST);
+		glDepthMask(GL_FALSE);
+		glDisable(GL_CULL_FACE);
+		renderer::bind(sky_eff);
+		skyBox.get_transform().position = acam_pos;
+		M = skyBox.get_transform().get_transform_matrix();
+		MVP = aVP * M;
+		glUniformMatrix4fv(sky_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+		renderer::bind(setting, 0);
+		glUniform1i(sky_eff.get_uniform_location("cubemap"), 0);
+		renderer::render(skyBox);
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+		glDepthMask(GL_TRUE);
 
-	// Bind effect
-	renderer::bind(eff);
-	renderer::bind(shadowMap, 5);
-	glUniform1i(eff.get_uniform_location("shadow_map"), 5);
+		// Bind effect
+		renderer::bind(eff);
+		renderer::bind(shadowMap, 5);
+		glUniform1i(eff.get_uniform_location("shadow_map"), 5);
 
-	//bind light
-	renderer::bind(pLight, "point");
-	renderer::bind(dLight, "direct");
-	renderer::bind(sLight, "spot");
-	//Get camera information
-	glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(acam_pos));
-	renderObject(&column, aVP, lVP);
-	renderObject(&terra, aVP, lVP);
+		//bind light
+		renderer::bind(pLight, "point");
+		renderer::bind(dLight, "direct");
+		renderer::bind(sLight, "spot");
+		//Get camera information
+		glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(acam_pos));
+		renderObject(&column, aVP, lVP);
+		renderObject(&terra, aVP, lVP);
 
-	//Render the sphere meshes
-	for (pair<const string, mesh> &item : sphereRing) {
-		renderObject(&item.second, aVP, lVP);
+		//Render the sphere meshes
+		for (pair<const string, mesh> &item : sphereRing) {
+			renderObject(&item.second, aVP, lVP);
+		}
+		for (pair<const string, mesh> &item : sphereRing2) {
+			renderObject(&item.second, aVP, lVP);
+		}
+		for (pair<const string, mesh> &item : sphereRing3) {
+			renderObject(&item.second, aVP, lVP);
+		}
+		for (pair<const string, mesh> &item : sphereRing4) {
+			renderObject(&item.second, aVP, lVP);
+		}
+		static texture reflection_tex = reflection.get_frame();
+		texs[&mirror] = &reflection_tex;
 	}
-	/*for (pair<const string, mesh> &item : sphereRing2) {
-		renderObject(&item.second, aVP, lVP);
-	}
-	for (pair<const string, mesh> &item : sphereRing3) {
-		renderObject(&item.second, aVP, lVP);
-	}
-	for (pair<const string, mesh> &item : sphereRing4) {
-		renderObject(&item.second, aVP, lVP);
-	}*/
-	static texture reflection_tex = reflection.get_frame();
-	texs[&mirror] = &reflection_tex;
-	//}
 	glClearColor(0.0, 1.0, 1.0, 1.0);
 
-	// begin rendering scene for first time
+	// begin rendering scene for first proper time
 	renderer::set_render_target(snap);
 	renderer::clear();
 
-	renderCams(V, P, cam_pos);
 	VP = P * V;
 
 	// Render the sky box
@@ -968,7 +968,7 @@ bool render() {
 	for (pair<const string, mesh> &item : sphereRing) {
 		renderObject(&item.second, VP, lVP);
 	}
-	/*for (pair<const string, mesh> &item : sphereRing2) {
+	for (pair<const string, mesh> &item : sphereRing2) {
 		renderObject(&item.second, VP, lVP);
 	}
 	for (pair<const string, mesh> &item : sphereRing3) {
@@ -976,7 +976,7 @@ bool render() {
 	}
 	for (pair<const string, mesh> &item : sphereRing4) {
 		renderObject(&item.second, VP, lVP);
-	}*/
+	}
 	renderer::bind(mirror_eff);
 	M = mirror.get_transform().get_transform_matrix();
 	MVP = VP * M;
