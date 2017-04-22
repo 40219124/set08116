@@ -10,6 +10,45 @@ vec4 colour_negative(vec4 col) {
 	return (vec4(1.0) - col);
 }
 
+vec4 bulge() {
+	float disc_max = 0.50 + value;
+	float disc_min = 0.50 - value;
+	float mod_x = tex_coords_frag.x - 0.5;
+	float mod_y = tex_coords_frag.y - 0.5;
+	float dist = distance(vec2(0.0,0.0), vec2(mod_x, mod_y));
+
+	float new_x = 0.5 + mod_x * dist * 1.38;
+	float new_y = 0.5 + mod_y * dist * 1.38;
+	return texture(tex, vec2(new_x, new_y));
+}
+
+vec4 spiral() {
+	float mod_x = tex_coords_frag.x - 0.5;
+	float mod_y = tex_coords_frag.y - 0.5;
+	float dist = distance(vec2(0.0,0.0), vec2(mod_x, mod_y));
+	float rads = (clamp(0.5 - dist, 0.0, 1.0)) * 3.1415 * value;
+	mat2 rot = mat2(cos(rads), sin(rads), -sin(rads), cos(rads));
+	vec2 new_tc = rot * vec2(mod_x, mod_y);
+	float new_x = 0.5 + new_tc.x;
+	float new_y = 0.5 + new_tc.y;
+	return texture(tex, vec2(new_x, new_y));
+}
+
+vec4 wiggle() {
+	float new_y = tex_coords_frag.y + value;
+	if (new_y < -1.0){
+		new_y += 1.0;
+	}
+	float new_x = tex_coords_frag.x + sin(new_y * 3.1415 * 20)/40.0;
+	if (new_x < 1 && new_x > 0){
+		return texture(tex, vec2(new_x, tex_coords_frag.y));
+	}
+	else {
+		return vec4(0.0, 0.0, 0.0, 1.0);
+	}
+}
+
+
 void main() {
 	// blur effect
 	/*vec4 tl = texture(tex, vec2(tex_coords_frag.x - value, tex_coords_frag.y - value));
@@ -29,50 +68,9 @@ void main() {
 		offset *= -1;
 	}
 	colour = texture(tex, vec2(0.5 + offset, tex_coords_frag.y));*/
-
-	// wiggle effect
-	/*float new_y = tex_coords_frag.y + value;
-	if (new_y < -1.0){
-		new_y += 1.0;
-	}
-	float new_x = tex_coords_frag.x + sin(new_y * 3.14 * 5)/40.0;
-	if (new_x < 1 && new_x > 0){
-		colour = texture(tex, vec2(new_x, tex_coords_frag.y));
-	}
-	else {
-		colour = vec4(0.0);
-	}*/
-	
-	// negative effect
-	/*colour = texture(tex, tex_coords_frag);
-	colour = vec4(1.0) - colour;*/
-
-	// new bulge
-	/*float disc_max = 0.50 + value;
-	float disc_min = 0.50 - value;
-	float mod_x = tex_coords_frag.x - 0.5;
-	float mod_y = tex_coords_frag.y - 0.5;
-	float dist = distance(vec2(0.0,0.0), vec2(mod_x, mod_y));
-
-	float new_x = 0.5 + mod_x * dist;
-	float new_y = 0.5 + mod_y * dist;
-	colour = texture(tex, vec2(new_x, new_y));*/
-
-	// spiral
-	/*float mod_x = tex_coords_frag.x - 0.5;
-	float mod_y = tex_coords_frag.y - 0.5;
-	float dist = distance(vec2(0.0,0.0), vec2(mod_x, mod_y));
-	float rads = (clamp(0.5 - dist, 0.0, 1.0)) * 3.1415 * value;
-	mat2 rot = mat2(cos(rads), sin(rads), -sin(rads), cos(rads));
-	vec2 new_tc = rot * vec2(mod_x, mod_y);
-	float new_x = 0.5 + new_tc.x;
-	float new_y = 0.5 + new_tc.y;
-	colour = texture(tex, vec2(new_x, new_y));*/
-	
-	
 	
 	// what are texture coords
-	colour = texture(tex, tex_coords_frag);
+	//colour = texture(tex, tex_coords_frag);
 	/*if ((tex_coords_frag.x < 0.8 && tex_coords_frag.x > 0.7) || (tex_coords_frag.y < 0.8 && tex_coords_frag.y > 0.7)){
 		colour += vec4(0.5,0.5,0.0,1.0);
 	}
@@ -85,6 +83,7 @@ void main() {
 	if ((new_x < 0.3 && new_x > 0.2) || (new_y < 0.3 && new_y > 0.2)){
 		colour += vec4(new_x,0.0,new_y,1.0);
 	}*/
+	colour = wiggle();
 	colour = colour_negative(colour);
 	colour.a = 1.0;
 }
