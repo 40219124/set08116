@@ -16,6 +16,7 @@ mesh ground;
 mesh hill;
 mesh terra;
 mesh column;
+mesh mirror;
 geometry polaroid;
 // Reference maps
 map<mesh*, texture*> texs;
@@ -26,9 +27,9 @@ directional_light dLight;
 point_light pLight;
 spot_light sLight;
 // Buffers
-shadow_map shadow;
 frame_buffer snap;
 frame_buffer shady;
+frame_buffer reflection;
 // Texture
 texture tex;
 texture shadowMap;
@@ -42,7 +43,8 @@ effect screen_eff;
 // Cameras
 target_camera target_c;
 free_camera free_c;
-target_camera fcam;
+target_camera shadow_cam;
+target_camera anti_cam;
 // camera boolean
 uint cam_state = 0;
 // Mouse positions
@@ -89,6 +91,43 @@ void freeCamHelp(vec3 target) {
 	// Set camera pitch
 	free_c.set_pitch(pitch);
 }
+// Move the anti-cam
+void antiCamUpdate() {
+	vec3 cam_pos = free_c.get_position();
+	vec3 cam_target = normalize(-(free_c.get_target() - cam_pos));
+	cout << cam_target.x << ", " << cam_target.y << ", " << cam_target.z << endl;
+	vec3 mirror_pos = mirror.get_transform().position;
+	vec3 mirror_norm = vec3(0.0f, 0.0f, 1.0f);//normalize(vec3(mirror.get_transform().get_transform_matrix() * vec4(0.0, 1.0, 0.0, 1.0)));
+
+	vec3 relative_pos = cam_pos - mirror_pos;
+
+	float dotted_view = dot(cam_target, mirror_norm);
+	float dotted_pos = dot(relative_pos, mirror_norm);
+	if (dotted_pos > 0) {
+		/*vec3 cross_view = cross(cam_target, mirror_norm);
+		float rot_view = 1;
+		if (cross_view.y < 0) {
+			rot_view *= -1;
+		}
+		rot_view *= (pi<float>() - 2.0 * acos(dotted_view));
+		vec3 new_target = -(rotate(quat(), rot_view, vec3(0.0f, 1.0f, 0.0f)) * cam_target);*/
+		vec3 new_target = -cam_target;
+		new_target.z *= -1;
+
+		/*vec3 cross_pos = cross(relative_pos, mirror_norm);
+		float rot_pos = 1;
+		if (cross_pos.y < 0) {
+			rot_pos *= -1;
+		}
+		rot_pos *= (pi<float>() - 2.0 * acos(dotted_pos));
+		vec3 new_relative = rotate(quat(), rot_pos, vec3(0.0f, 1.0f, 0.0f)) * relative_pos;
+		vec3 new_pos = mirror_pos + new_relative;*/
+		vec3 new_pos = mirror_pos + vec3(relative_pos.x, relative_pos.y, -relative_pos.z);
+
+		anti_cam.set_position(new_pos);
+		anti_cam.set_target(new_pos + new_target);
+	}
+}
 //make a map of spheres
 void makeSphereStructure(map<string, mesh> *sphereStructure, float sphereCount) {
 	// Create the parent sphere
@@ -103,7 +142,7 @@ void makeSphereStructure(map<string, mesh> *sphereStructure, float sphereCount) 
 	(*sphereStructure)["sphere0"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	// Add texture map information
 	texs[&(*sphereStructure)["sphere0"]] = &sphere_tex;
-	norms[&(*sphereStructure)["sphere0"]] = &sphere_norm; 
+	norms[&(*sphereStructure)["sphere0"]] = &sphere_norm;
 	// Set hierarchy pair to be a null pointer
 	meshHierarchy[&(*sphereStructure)["sphere0"]] = nullptr;
 
@@ -242,9 +281,9 @@ bool load_content() {
 	eff.build();
 
 	// Set shadow properties
-	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
 	snap = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
 	shady = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+	reflection = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
 
 	// Load in shadow shaders
 	shadow_eff.add_shader("shaders/main_shadows.vert", GL_VERTEX_SHADER);
@@ -303,6 +342,22 @@ bool load_content() {
 	terra.get_transform().scale = vec3(hill_scale, 30.0f, hill_scale);
 	terra.get_transform().translate(vec3(0.0f, -49.0f, 0.0f));
 
+	// Make a "mirror"
+	vec3 mirror_norm;
+	vec3 mirror_pos;
+	geometry murr = geometry();
+	murr.set_type(GL_TRIANGLE_STRIP);
+	vector<vec3> murr_points = { vec3(1.0f, 1.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f) };
+
+	mirror = mesh(geometry_builder::create_plane(20, 20));
+	mirror.get_transform().rotate(eulerAngleX(half_pi<float>()));
+	mirror.get_transform().rotate(eulerAngleY(pi<float>()));
+	mirror.get_transform().translate(vec3(0.0f, 30.0f, -30.0f));
+	static texture free_cam_ui = texture("textures/free_cam_ui.png");
+	texs[&mirror] = &free_cam_ui;
+	meshHierarchy[&mirror] = nullptr;
+	//mirror_pos = mirror.get_geometry().get_buffer(0);
+
 	// Make the quad for rendering to screen region
 	vector<vec3> quad_pos = { vec3(-1.0f, -1.0f, 0.0f),  vec3(1.0f, -1.0f, 0.0f),  vec3(-1.0f, 1.0f, 0.0f),  vec3(1.0f, 1.0f, 0.0f) };
 	vector<vec2> quad_texco = { vec2(0.0f, 0.0f), vec2(1.0f, 0.0f), vec2(0.0f, 1.0f), vec2(1.0f, 1.0f) };
@@ -348,7 +403,7 @@ bool load_content() {
 	// Set directional light properties
 	bool dLightOn = true;
 	dLight.set_ambient_intensity(vec4(0.5f, 0.5f, 0.5f, 1.0f));
-	dLight.set_direction(normalize(vec3(0.0f, 1.0f, 0.0f)));
+	dLight.set_direction(normalize(vec3(1.0f, 1.0f, 1.0f)));
 	dLight.set_light_colour(vec4(0.1f, 0.1f, 0.1, 1.0f));
 	if (!dLightOn) {
 		dLight.set_ambient_intensity(vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -379,9 +434,11 @@ bool load_content() {
 	freeCamHelp(free_c.get_target());
 	free_c.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 
-	fcam.set_position(vec3(0.0f, 90.0f, 0.0f));
-	fcam.set_target(vec3(0.0f, 0.0f, 1.0f));
-	fcam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
+	shadow_cam.set_position(vec3(0.0f, 90.0f, 0.0f));
+	shadow_cam.set_target(vec3(0.0f, 0.0f, 1.0f));
+	shadow_cam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
+
+	anti_cam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 
 	return true;
 }
@@ -496,6 +553,8 @@ void free_manipulation(float delta_time) {
 	//reset mouse position
 	mouse_x = current_x;
 	mouse_y = current_y;
+	antiCamUpdate();
+	anti_cam.update(delta_time);
 	//update camera
 	free_c.update(delta_time);
 }
@@ -572,7 +631,7 @@ void sky_follow() {
 
 bool update(float delta_time) {
 	//print fps
-	cout << 1.0f / delta_time << endl;
+	//cout << 1.0f / delta_time << endl;
 	// Cumulative total of time
 	static float time_total = 0.0f;
 	time_total += delta_time;
@@ -608,10 +667,6 @@ bool update(float delta_time) {
 	transform_spheres(delta_time, time_total, &sphereRing3);
 	transform_spheres(delta_time, time_total, &sphereRing4);
 
-	// Set the shadow to equal the values of the spot light
-	shadow.light_position = sLight.get_position();
-	shadow.light_dir = sLight.get_direction();
-
 	// To move the back wall on the x-axis
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT)) {
 		ground.get_transform().translate(vec3(0.0f, delta_time * -20.0f, 0.0f));
@@ -625,8 +680,8 @@ bool update(float delta_time) {
 		blurr *= 1.0f + 0.4f * delta_time;
 		cout << blurr << endl;
 	}
-	if (glfwGetKey(renderer::get_window(), GLFW_KEY_DOWN)) { 
-		blurr *= 1.0f - 0.4f * delta_time;    
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_DOWN)) {
+		blurr *= 1.0f - 0.4f * delta_time;
 		cout << blurr << endl;
 	}
 
@@ -634,13 +689,15 @@ bool update(float delta_time) {
 	static bool key_i = false;
 	static bool key_g = false;
 	static bool key_b = false;
-	if (glfwGetKey(renderer::get_window(), GLFW_KEY_I) == GLFW_PRESS && !key_i) {
+	// on key i toggle negative
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_GRAVE_ACCENT) == GLFW_PRESS && !key_i) {
 		neg_state *= -1;
 		key_i = true;
 	}
-	if (glfwGetKey(renderer::get_window(), GLFW_KEY_I) == GLFW_RELEASE && key_i) {
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_GRAVE_ACCENT) == GLFW_RELEASE && key_i) {
 		key_i = false;
 	}
+	// on key g toggle guides
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_G) == GLFW_PRESS && !key_g) {
 		guides *= -1;
 		key_g = true;
@@ -648,6 +705,7 @@ bool update(float delta_time) {
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_G) == GLFW_RELEASE && key_g) {
 		key_g = false;
 	}
+	// on key b toggle effect
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_B) == GLFW_PRESS && !key_b) {
 		++eff_state;
 		if (eff_state > 3) {
@@ -660,7 +718,7 @@ bool update(float delta_time) {
 	}
 
 	sky_follow();
-	fcam.update(delta_time);
+	shadow_cam.update(delta_time);
 	return true;
 }
 // Aquire the transformation matrix of a child object 
@@ -692,6 +750,11 @@ void renderCams(mat4 &V, mat4 &P, vec3 &cam_pos) {
 		P = free_c.get_projection();
 		//set camera location, eye_pos
 		cam_pos = free_c.get_position();
+		if (guides > 0) {
+			V = anti_cam.get_view();
+			P = anti_cam.get_projection();
+			cam_pos = anti_cam.get_position();
+		}
 		break;
 	default:
 		V = target_c.get_view();
@@ -761,7 +824,7 @@ void renderShady(mesh *obj, const mat4 &lVP, const mat4 lV) {
 	MVP = lVP * M;
 	glUniformMatrix4fv(shadow_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	glUniformMatrix4fv(shadow_eff.get_uniform_location("MV"), 1, GL_FALSE, value_ptr(lV * M));
-	glUniform3fv(shadow_eff.get_uniform_location("eye_pos"), 1, value_ptr(fcam.get_position()));
+	glUniform3fv(shadow_eff.get_uniform_location("eye_pos"), 1, value_ptr(shadow_cam.get_position()));
 	renderer::render(*obj);
 }
 
@@ -777,8 +840,8 @@ bool render() {
 	//glCullFace(GL_FRONT);
 	renderer::bind(shadow_eff);
 
-	lV = fcam.get_view();
-	lP = fcam.get_projection();
+	lV = shadow_cam.get_view();
+	lP = shadow_cam.get_projection();
 	lVP = lP * lV;
 	for (pair<const string, mesh> &item : sphereRing) {
 		renderShady(&item.second, lVP, lV);
@@ -799,7 +862,65 @@ bool render() {
 	shadowMap = shady.get_frame();
 
 	glClearColor(0.0, 1.0, 1.0, 1.0);
-	 
+
+	// render the reflection view
+	if (free_c.get_position().z > mirror.get_transform().position.z) {
+		renderer::set_render_target(reflection);
+		renderer::clear();
+
+		V = anti_cam.get_view();
+		P = anti_cam.get_projection();
+		cam_pos = anti_cam.get_position();
+		VP = P * V;
+
+		// Render the sky box
+		glDisable(GL_DEPTH_TEST);
+		glDepthMask(GL_FALSE);
+		glDisable(GL_CULL_FACE);
+		renderer::bind(sky_eff);
+		M = skyBox.get_transform().get_transform_matrix();
+		MVP = VP * M;
+		glUniformMatrix4fv(sky_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+		renderer::bind(setting, 0);
+		glUniform1i(sky_eff.get_uniform_location("cubemap"), 0);
+		renderer::render(skyBox);
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+		glDepthMask(GL_TRUE);
+
+		// Bind effect
+		renderer::bind(eff);
+		renderer::bind(shadowMap, 5);
+		glUniform1i(eff.get_uniform_location("shadow_map"), 5);
+
+		//bind light
+		renderer::bind(pLight, "point");
+		renderer::bind(dLight, "direct");
+		renderer::bind(sLight, "spot");
+		//Get camera information
+		glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(cam_pos));
+		renderObject(&column, VP, lVP);
+		renderObject(&terra, VP, lVP);
+		renderObject(&mirror, VP, lVP);
+		//renderObject(&ground, VP, lVP);
+
+		//Render the sphere meshes
+		for (pair<const string, mesh> &item : sphereRing) {
+			renderObject(&item.second, VP, lVP);
+		}
+		for (pair<const string, mesh> &item : sphereRing2) {
+			renderObject(&item.second, VP, lVP);
+		}
+		for (pair<const string, mesh> &item : sphereRing3) {
+			renderObject(&item.second, VP, lVP);
+		}
+		for (pair<const string, mesh> &item : sphereRing4) {
+			renderObject(&item.second, VP, lVP);
+		}
+		static texture reflection_tex = reflection.get_frame();
+		texs[&mirror] = &reflection_tex;
+	}
+
 	// begin rendering scene for first time
 	renderer::set_render_target(snap);
 	renderer::clear();
@@ -835,6 +956,7 @@ bool render() {
 	glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(cam_pos));
 	renderObject(&column, VP, lVP);
 	renderObject(&terra, VP, lVP);
+	renderObject(&mirror, VP, lVP);
 	//renderObject(&ground, VP, lVP);
 
 	//Render the sphere meshes
