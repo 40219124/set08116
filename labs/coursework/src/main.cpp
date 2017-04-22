@@ -227,6 +227,44 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 }
 
 bool load_content() {
+
+	// Load in shaders
+	eff.add_shader("shaders/main_all.vert", GL_VERTEX_SHADER);
+	vector<string> frags{ "shaders/main_all.frag", "shaders/part_directional.frag",
+		"shaders/part_point.frag", "shaders/part_spot.frag", "shaders/part_shadows.frag",
+		"shaders/part_normal.frag" };
+	eff.add_shader(frags, GL_FRAGMENT_SHADER);
+	// Build effect
+	eff.build();
+
+	// Set shadow properties
+	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
+	snap = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+	shady = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+
+	// Load in shadow shaders
+	shadow_eff.add_shader("shaders/main_shadows.vert", GL_VERTEX_SHADER);
+	shadow_eff.add_shader("shaders/main_shadows.frag", GL_FRAGMENT_SHADER);
+	shadow_eff.build();
+
+	// Create simpler effect
+	simple_eff.add_shader("shaders/main_simple.vert", GL_VERTEX_SHADER);
+	frags = { "shaders/main_simple.frag", "shaders/part_directional.frag",
+		"shaders/part_point.frag", "shaders/part_spot.frag", "shaders/part_shadows.frag" };
+	simple_eff.add_shader(frags, GL_FRAGMENT_SHADER);
+	// Build effect
+	simple_eff.build();
+
+	// create skybox effect
+	sky_eff.add_shader("shaders/main_skybox.vert", GL_VERTEX_SHADER);
+	sky_eff.add_shader("shaders/main_skybox.frag", GL_FRAGMENT_SHADER);
+	sky_eff.build();
+
+	// Create screen effect
+	screen_eff.add_shader("shaders/main_screenspace.vert", GL_VERTEX_SHADER);
+	screen_eff.add_shader("shaders/main_screenspace.frag", GL_FRAGMENT_SHADER);
+	screen_eff.build();
+
 	// Loads in a texture   
 	tex = texture("textures/check_1.png");
 	static texture column_tex = texture("textures/Marble_Base_Color.jpg");
@@ -326,43 +364,6 @@ bool load_content() {
 	sLight.set_light_colour(vec4(0.8f, 0.7f, 0.1f, 1.0f));
 	sLight.set_range(160.0f);
 	sLight.set_power(5.0f);
-
-	// Load in shaders
-	eff.add_shader("shaders/main_all.vert", GL_VERTEX_SHADER);
-	vector<string> frags{ "shaders/main_all.frag", "shaders/part_directional.frag",
-		"shaders/part_point.frag", "shaders/part_spot.frag", "shaders/part_shadows.frag",
-		"shaders/part_normal.frag" };
-	eff.add_shader(frags, GL_FRAGMENT_SHADER);
-	// Build effect
-	eff.build();
-
-	// Set shadow properties
-	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
-	snap = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
-	shady = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
-
-	// Load in shadow shaders
-	shadow_eff.add_shader("shaders/main_shadows.vert", GL_VERTEX_SHADER);
-	shadow_eff.add_shader("shaders/main_shadows.frag", GL_FRAGMENT_SHADER);
-	shadow_eff.build();
-
-	// Create simpler effect
-	simple_eff.add_shader("shaders/main_simple.vert", GL_VERTEX_SHADER);
-	frags = { "shaders/main_simple.frag", "shaders/part_directional.frag",
-		"shaders/part_point.frag", "shaders/part_spot.frag", "shaders/part_shadows.frag" };
-	simple_eff.add_shader(frags, GL_FRAGMENT_SHADER); 
-	// Build effect
-	simple_eff.build();
-
-	// create skybox effect
-	sky_eff.add_shader("shaders/main_skybox.vert", GL_VERTEX_SHADER);
-	sky_eff.add_shader("shaders/main_skybox.frag", GL_FRAGMENT_SHADER);
-	sky_eff.build();
-
-	// Create screen effect
-	screen_eff.add_shader("shaders/main_screenspace.vert", GL_VERTEX_SHADER);
-	screen_eff.add_shader("shaders/main_screenspace.frag", GL_FRAGMENT_SHADER);
-	screen_eff.build();
 
 	// Set target camera properties 
 	target_c.set_position(vec3(-80.0f, 30.0f, 0.0f));
