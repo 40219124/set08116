@@ -99,7 +99,7 @@ void makeSphereStructure(map<string, mesh> *sphereStructure, float sphereCount) 
 	(*sphereStructure)["sphere0"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	// Add texture map information
 	texs[&(*sphereStructure)["sphere0"]] = &sphere_tex;
-	norms[&(*sphereStructure)["sphere0"]] = &sphere_norm;
+	norms[&(*sphereStructure)["sphere0"]] = &sphere_norm; 
 	// Set hierarchy pair to be a null pointer
 	meshHierarchy[&(*sphereStructure)["sphere0"]] = nullptr;
 
@@ -844,6 +844,7 @@ bool render() {
 	}
 
 	renderer::set_render_target();
+	renderer::setClearColour(0.0f, 0.0f, 0.0f);
 	renderer::bind(screen_eff);
 	MVP = mat4(1.0f);
 	glUniformMatrix4fv(screen_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
