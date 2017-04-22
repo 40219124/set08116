@@ -49,7 +49,7 @@ void main() {
 	colour = texture(tex, vec2(new_x, new_y));*/
 
 	// new bulge
-	float disc_max = 0.50 + value;
+	/*float disc_max = 0.50 + value;
 	float disc_min = 0.50 - value;
 	float mod_x = tex_coords_frag.x - 0.5;
 	float mod_y = tex_coords_frag.y - 0.5;
@@ -57,7 +57,20 @@ void main() {
 
 	float new_x = 0.5 + mod_x * dist;
 	float new_y = 0.5 + mod_y * dist;
+	colour = texture(tex, vec2(new_x, new_y));*/
+
+	// spiral
+	float mod_x = tex_coords_frag.x - 0.5;
+	float mod_y = tex_coords_frag.y - 0.5;
+	float dist = distance(vec2(0.0,0.0), vec2(mod_x, mod_y));
+	float rads = (/*distance(0.5, 0.5) -*/clamp(0.5 - dist, 0.0, 1.0)) * 3.1415 * value;
+	mat2 rot = mat2(cos(rads), sin(rads), -sin(rads), cos(rads));
+	vec2 new_tc = rot * vec2(mod_x, mod_y);
+	float new_x = 0.5 + new_tc.x;
+	float new_y = 0.5 + new_tc.y;
 	colour = texture(tex, vec2(new_x, new_y));
+	
+	
 	
 	// what are texture coords
 	//colour = texture(tex, tex_coords_frag);
