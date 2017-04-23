@@ -14,7 +14,7 @@ float castShadows(in sampler2D shadow_map, in vec4 light_pos, in vec3 world_pos,
     if (depth == 0.0 || depth == 1.0) {
         return 1.0;
     }
-	else if (depth < dist - 0.003){
+	else if (depth < dist - 0.004){
         return depth;
     }
 	 else {
