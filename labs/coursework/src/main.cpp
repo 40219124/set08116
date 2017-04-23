@@ -385,9 +385,12 @@ bool load_content() {
 	if (!pLightOn) {
 		pLight.set_light_colour(vec4(0.0f, 0.0f, 0.0f, 0.0f));
 	}
+	// Shadow casting light properties
+	vec3 shadow_light_pos = vec3(90.0f, 90.0f, 90.0f)/2.0f;
+	vec3 shadow_light_dir = normalize(vec3(-1.0f));
 	// Set spot light properties
-	sLight.set_direction(normalize(vec3(0.0f, -1.0f, 0.0f)));
-	sLight.set_position(vec3(0.0f, 90.0f, 0.0f));
+	sLight.set_direction(shadow_light_dir);
+	sLight.set_position(shadow_light_pos);
 	sLight.set_light_colour(vec4(0.8f, 0.7f, 0.1f, 1.0f));
 	sLight.set_range(160.0f);
 	sLight.set_power(5.0f);
@@ -402,9 +405,9 @@ bool load_content() {
 	freeCamHelp(free_c.get_target());
 	free_c.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 
-	shadow_cam.set_position(vec3(0.0f, 90.0f, 0.0f));
-	shadow_cam.set_target(vec3(0.0f, 0.0f, 1.0f));
-	shadow_cam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
+	shadow_cam.set_position(shadow_light_pos);
+	shadow_cam.set_target(shadow_light_pos + shadow_light_dir);
+	shadow_cam.set_projection(half_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 
 	anti_cam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
 
@@ -744,6 +747,7 @@ void renderShady(mesh *obj, const mat4 &lVP) {
 	transformHierarchy(obj, M, dc);
 	MVP = lVP * M;
 	glUniformMatrix4fv(shadow_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	glUniformMatrix4fv(shadow_eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 	glUniform3fv(shadow_eff.get_uniform_location("eye_pos"), 1, value_ptr(shadow_cam.get_position()));
 	renderer::render(*obj);
 }
@@ -757,7 +761,6 @@ bool render() {
 
 	renderer::set_render_target(shady);
 	renderer::clear();
-	//glCullFace(GL_FRONT);
 	renderer::bind(shadow_eff);
 
 	lV = shadow_cam.get_view();
@@ -770,9 +773,9 @@ bool render() {
 	renderShady(&terra, lVP);
 	renderShady(&mirror, lVP);
 
-	//glCullFace(GL_BACK);
 	shadowMap = shady.get_frame();
 
+ 	glClearColor(0.0, 1.0, 1.0, 1.0);
 	renderCams(V, P, cam_pos);
 	// render the reflection view
 	if (cam_pos.z > mirror.get_transform().position.z) {
@@ -821,7 +824,6 @@ bool render() {
 		static texture reflection_tex = reflection.get_frame();
 		texs[&mirror] = &reflection_tex;
 	}
-	glClearColor(0.0, 1.0, 1.0, 1.0);
 
 	// begin rendering scene for first proper time
 	renderer::set_render_target(snap);
