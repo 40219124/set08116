@@ -293,7 +293,6 @@ bool load_content() {
 	screen_eff.build();
 
 	// Loads in a texture   
-	tex = texture("textures/check_1.png");
 	static texture column_tex = texture("textures/Marble_Base_Color.jpg");
 	static texture column_norm = texture("textures/Marble_Normal_OpenGL.jpg");
 
@@ -377,7 +376,7 @@ bool load_content() {
 		pLight.set_light_colour(vec4(0.0f, 0.0f, 0.0f, 0.0f));
 	}
 	// Shadow casting light properties
-	vec3 shadow_light_pos = vec3(90.0f, 90.0f, 90.0f)/2.0f;
+	vec3 shadow_light_pos = vec3(90.0f, 90.0f, 90.0f) / 2.0f;
 	vec3 shadow_light_dir = normalize(vec3(-1.0f));
 	// Set spot light properties
 	sLight.set_direction(shadow_light_dir);
@@ -768,7 +767,7 @@ bool render() {
 	// Save frame to texture
 	shadowMap = shady.get_frame();
 	// code xl break point ------------------------------------------------------------------
- 	glClearColor(0.0, 1.0, 1.0, 1.0);
+	glClearColor(0.0, 1.0, 1.0, 1.0);
 	// Render the reflection view only if camera is infront of the mirror
 	if (cam_pos.z > mirror.get_transform().position.z) {
 		// Set render target
@@ -862,20 +861,27 @@ bool render() {
 	renderer::bind(*(texs[&mirror]), 0);
 	glUniform1i(mirror_eff.get_uniform_location("tex"), 0);
 	renderer::render(mirror);
-
+	// Set texture to equal rendered frame
+	texture processing = snap.get_frame();
+	renderer::clear();
 	// Render scene with post processing
-	renderer::set_render_target();
-	renderer::setClearColour(0.0f, 0.0f, 0.0f);
-	renderer::bind(screen_eff);
-	MVP = mat4(1.0f);
-	glUniformMatrix4fv(screen_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-	renderer::bind(snap.get_frame(), 0);
-	glUniform1i(screen_eff.get_uniform_location("tex"), 0);
-	glUniform1f(screen_eff.get_uniform_location("value"), blurr);
-	glUniform1i(screen_eff.get_uniform_location("eff_state"), eff_state);
-	glUniform1i(screen_eff.get_uniform_location("neg_state"), neg_state);
-	glUniform1i(screen_eff.get_uniform_location("guides"), guides);
-	renderer::render(polaroid);
+	if (eff_state > 0 || neg_state > 0) {
+		renderer::bind(screen_eff);
+		MVP = mat4(1.0f);
+		glUniformMatrix4fv(screen_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+		renderer::bind(processing, 0);
+		glUniform1i(screen_eff.get_uniform_location("tex"), 0);
+		glUniform1f(screen_eff.get_uniform_location("value"), blurr);
+		glUniform1i(screen_eff.get_uniform_location("eff_state"), eff_state);
+		glUniform1i(screen_eff.get_uniform_location("neg_state"), neg_state);
+		glUniform1i(screen_eff.get_uniform_location("guides"), guides);
+		renderer::render(polaroid);
+		// Set texture to equal rendered frame
+		texture processing = snap.get_frame();
+		renderer::clear();
+	}
+	// Render scene with blur
+
 
 	return true;
 }
