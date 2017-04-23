@@ -37,6 +37,8 @@ effect shadow_eff;
 effect sky_eff;
 effect screen_eff;
 effect mirror_eff;
+effect blur_eff;
+effect final_eff;
 // Cameras
 target_camera target_c;
 free_camera free_c;
@@ -257,6 +259,16 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 }
 
 bool load_content() {
+
+	// Blur effect
+	/*blur_eff.add_shader("shaders/main_blur.vert", GL_VERTEX_SHADER);
+	blur_eff.add_shader("shaders/main_blur.frag", GL_FRAGMENT_SHADER);
+	blur_eff.build();*/
+
+	// Final effect
+	final_eff.add_shader("shaders/end.vert", GL_VERTEX_SHADER);
+	final_eff.add_shader("shaders/end.frag", GL_FRAGMENT_SHADER);
+	final_eff.build();
 
 	// Mirror effect
 	mirror_eff.add_shader("shaders/main_mirror.vert", GL_VERTEX_SHADER);
@@ -625,11 +637,11 @@ bool update(float delta_time) {
 	static bool key_g = false;
 	static bool key_b = false;
 	// on key i toggle negative
-	if (glfwGetKey(renderer::get_window(), GLFW_KEY_GRAVE_ACCENT) == GLFW_PRESS && !key_i) {
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_I) == GLFW_PRESS && !key_i) {
 		neg_state *= -1;
 		key_i = true;
 	}
-	if (glfwGetKey(renderer::get_window(), GLFW_KEY_GRAVE_ACCENT) == GLFW_RELEASE && key_i) {
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_I) == GLFW_RELEASE && key_i) {
 		key_i = false;
 	}
 	// on key g toggle guides
@@ -862,10 +874,13 @@ bool render() {
 	glUniform1i(mirror_eff.get_uniform_location("tex"), 0);
 	renderer::render(mirror);
 	// Set texture to equal rendered frame
-	texture processing = snap.get_frame();
-	renderer::clear();
+	texture processing = texture();
+	processing = snap.get_frame();
 	// Render scene with post processing
 	if (eff_state > 0 || neg_state > 0) {
+		static frame_buffer proc_buff = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+		renderer::set_render_target(proc_buff);
+		renderer::clear();
 		renderer::bind(screen_eff);
 		MVP = mat4(1.0f);
 		glUniformMatrix4fv(screen_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
@@ -877,11 +892,18 @@ bool render() {
 		glUniform1i(screen_eff.get_uniform_location("guides"), guides);
 		renderer::render(polaroid);
 		// Set texture to equal rendered frame
-		texture processing = snap.get_frame();
-		renderer::clear();
+		processing = proc_buff.get_frame();
 	}
 	// Render scene with blur
-
+	
+	// Render final output to processing to screen
+	renderer::set_render_target();
+	renderer::clear();
+	renderer::bind(final_eff);
+	renderer::bind(processing, 0);
+	glUniform1i(final_eff.get_uniform_location("tex"), 0);
+	glUniformMatrix4fv(final_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(mat4(1.0f)));
+	renderer::render(polaroid);
 
 	return true;
 }

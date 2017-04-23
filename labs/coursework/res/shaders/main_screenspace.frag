@@ -64,7 +64,7 @@ vec4 wiggle() {
 	if (new_y < -1.0){
 		new_y += 1.0;
 	}
-	float new_x = tex_coords_frag.x + sin(new_y * 3.1415 * 20)/20.0;
+	float new_x = tex_coords_frag.x + sin(new_y * 3.1415 * 5)/20.0;
 	vec4 col = vec4(0.0,0.0,0.0,1.0);
 	if (new_x < 1 && new_x > 0){
 		col += texture(tex, vec2(new_x, tex_coords_frag.y));
@@ -92,28 +92,6 @@ void main() {
 	vec4 bc = texture(tex, vec2(tex_coords_frag.x, tex_coords_frag.y - value));
 	vec4 br = texture(tex, vec2(tex_coords_frag.x + value, tex_coords_frag.y - value));
 	colour = (tl + tc + tr + ml + mc + mr + bl + bc + br)/9.0;*/
-	
-	// no x effect
-	/*float offset = value;
-	if (tex_coords_frag.x < 0.5){
-		offset *= -1;
-	}
-	colour = texture(tex, vec2(0.5 + offset, tex_coords_frag.y));*/
-	
-	// what are texture coords
-	//colour = texture(tex, tex_coords_frag);
-	/*if ((tex_coords_frag.x < 0.77 && tex_coords_frag.x > 0.73) || (tex_coords_frag.y < 0.77 && tex_coords_frag.y > 0.73)){
-		colour += vec4(0.5,0.5,0.0,1.0);
-	}
-	if ((tex_coords_frag.x < 0.27 && tex_coords_frag.x > 0.23) || (tex_coords_frag.y < 0.27 && tex_coords_frag.y > 0.23)){
-		colour += vec4(0.5,0.0,0.5,1.0);
-	}*/
-	/*if ((new_x < 0.77 && new_x > 0.73) || (new_y < 0.77 && new_y > 0.73)){
-		colour += vec4(new_x,new_y,0.0,1.0);
-	}
-	if ((new_x < 0.27 && new_x > 0.23) || (new_y < 0.27 && new_y > 0.23)){
-		colour += vec4(new_x,0.0,new_y,1.0);
-	}*/
 
 	if (eff_state == 1){
 		colour = bulge();
