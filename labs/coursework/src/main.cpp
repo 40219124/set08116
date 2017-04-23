@@ -54,6 +54,7 @@ float blurr = 0.002;
 int eff_state = 0;
 int neg_state = -1;
 int guides = -1;
+bool blur_state = false;
 
 //focus the free cam on a target location
 void freeCamHelp(vec3 target) {
@@ -259,11 +260,10 @@ void generate_terrain(geometry &geom, const texture &height_map, int width, int 
 }
 
 bool load_content() {
-
 	// Blur effect
-	/*blur_eff.add_shader("shaders/main_blur.vert", GL_VERTEX_SHADER);
+	blur_eff.add_shader("shaders/main_blur.vert", GL_VERTEX_SHADER);
 	blur_eff.add_shader("shaders/main_blur.frag", GL_FRAGMENT_SHADER);
-	blur_eff.build();*/
+	blur_eff.build();
 
 	// Final effect
 	final_eff.add_shader("shaders/end.vert", GL_VERTEX_SHADER);
@@ -635,6 +635,7 @@ bool update(float delta_time) {
 	// To toggle post processing
 	static bool key_i = false;
 	static bool key_g = false;
+	static bool key_e = false;
 	static bool key_b = false;
 	// on key i toggle negative
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_I) == GLFW_PRESS && !key_i) {
@@ -653,11 +654,19 @@ bool update(float delta_time) {
 		key_g = false;
 	}
 	// on key b toggle effect
-	if (glfwGetKey(renderer::get_window(), GLFW_KEY_B) == GLFW_PRESS && !key_b) {
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_E) == GLFW_PRESS && !key_e) {
 		++eff_state;
 		if (eff_state > 3) {
 			eff_state = 0;
 		}
+		key_e = true;
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_E) == GLFW_RELEASE && key_e) {
+		key_e = false;
+	}
+	// on key b toggle effect
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_B) == GLFW_PRESS && !key_b) {
+		blur_state = !blur_state;
 		key_b = true;
 	}
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_B) == GLFW_RELEASE && key_b) {
@@ -882,8 +891,6 @@ bool render() {
 		renderer::set_render_target(proc_buff);
 		renderer::clear();
 		renderer::bind(screen_eff);
-		MVP = mat4(1.0f);
-		glUniformMatrix4fv(screen_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 		renderer::bind(processing, 0);
 		glUniform1i(screen_eff.get_uniform_location("tex"), 0);
 		glUniform1f(screen_eff.get_uniform_location("value"), blurr);
@@ -895,14 +902,23 @@ bool render() {
 		processing = proc_buff.get_frame();
 	}
 	// Render scene with blur
-	
+	if (blur_state) {
+		static frame_buffer blurr_buff = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+		renderer::set_render_target(blurr_buff);
+		renderer::clear();
+		renderer::bind(blur_eff);
+		renderer::bind(processing, 0);
+		glUniform1i(blur_eff.get_uniform_location("tex"), 0);
+		renderer::render(polaroid);
+		processing = blurr_buff.get_frame();
+	}
+
 	// Render final output to processing to screen
 	renderer::set_render_target();
 	renderer::clear();
 	renderer::bind(final_eff);
 	renderer::bind(processing, 0);
 	glUniform1i(final_eff.get_uniform_location("tex"), 0);
-	glUniformMatrix4fv(final_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(mat4(1.0f)));
 	renderer::render(polaroid);
 
 	return true;
