@@ -49,7 +49,7 @@ vec4 calculatePointLight (in point_light light, in material mate, in vec3 positi
 
 vec4 calculateSpotLight (in spot_light light, in material mate, in vec3 position, in vec3 normal, in vec3 view_dir, in vec4 tex_col);
 
-float castShadows(in sampler2D shadow_map, in vec4 light_pos);
+float castShadows(in sampler2D shadow_map, in vec4 light_pos, in vec3 world_pos, in vec3 eye_pos);
 
 vec3 normalMap(in vec3 normal, in vec3 binormal, in vec3 tangent, in sampler2D normal_map, in vec2 tex_coord);
 
@@ -80,6 +80,6 @@ void main () {
 	colour += calculateDirectionalLight(direct, mat, normal2, view_dir, tex_col);
 	colour += calculatePointLight(point, mat, world_pos, normal2, view_dir, tex_col);
 	colour += calculateSpotLight(spot, mat, world_pos, normal2, view_dir, tex_col);
-	colour *= castShadows(shadow_map, light_pos);
+	colour *= castShadows(shadow_map, light_pos, world_pos, spot.position);
 	colour.a = 1.0f;
 }

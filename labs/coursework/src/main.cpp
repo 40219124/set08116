@@ -33,7 +33,6 @@ texture shadowMap;
 cubemap setting;
 // Effects
 effect eff;
-effect simple_eff;
 effect shadow_eff;
 effect sky_eff;
 effect screen_eff;
@@ -282,14 +281,6 @@ bool load_content() {
 	shadow_eff.add_shader("shaders/main_shadows.vert", GL_VERTEX_SHADER);
 	shadow_eff.add_shader("shaders/main_shadows.frag", GL_FRAGMENT_SHADER);
 	shadow_eff.build();
-
-	// Create simpler effect
-	simple_eff.add_shader("shaders/main_simple.vert", GL_VERTEX_SHADER);
-	frags = { "shaders/main_simple.frag", "shaders/part_directional.frag",
-		"shaders/part_point.frag", "shaders/part_spot.frag", "shaders/part_shadows.frag" };
-	simple_eff.add_shader(frags, GL_FRAGMENT_SHADER);
-	// Build effect
-	simple_eff.build();
 
 	// create skybox effect
 	sky_eff.add_shader("shaders/main_skybox.vert", GL_VERTEX_SHADER);
