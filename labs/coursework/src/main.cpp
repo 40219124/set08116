@@ -141,7 +141,6 @@ void makeSphereStructure(map<string, mesh> *sphereStructure, float sphereCount) 
 	for (int i = 0; i < sphereCount; ++i) {
 		//creates an index for the map
 		string name = "sphere" + (to_string(i + 1));
-		//(*sphereStructure)[name] = mesh(geometry_builder().create_sphere());
 		(*sphereStructure)[name] = technosphere;
 		sphere = &(*sphereStructure)[name];
 		// sets material properties
@@ -151,7 +150,7 @@ void makeSphereStructure(map<string, mesh> *sphereStructure, float sphereCount) 
 		sphere->get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 		// rotates the sphere on the y-axis, and moves to circumference of ring
 		sphere->get_transform().rotate(eulerAngleY(2.0f * i * pi<float>() / sphereCount));
-		sphere->get_transform().translate(vec3((*sphereStructure)[name].get_transform().get_transform_matrix() * vec4(/*sphere_count/4.0f*/10.0f, 0.0f, 0.0f, 1.0f)));
+		sphere->get_transform().translate(vec3((*sphereStructure)[name].get_transform().get_transform_matrix() * vec4(10.0f, 0.0f, 0.0f, 1.0f)));
 		// maps a texture to the sphere's name
 		texs[sphere] = &sphere_tex;
 		norms[sphere] = &sphere_norm;
@@ -338,14 +337,13 @@ bool load_content() {
 
 	// Make a "mirror"
 	mirror = mesh(geometry_builder::create_plane(1, 1));
-	mirror.get_transform().scale = vec3(20.0f);
+	mirror.get_transform().scale = vec3(30.0f, 1.0f, 50.0f);
 	mirror.get_transform().rotate(eulerAngleX(half_pi<float>()));
 	mirror.get_transform().rotate(eulerAngleY(pi<float>()));
-	mirror.get_transform().translate(vec3(0.0f, 30.0f, -30.0f));
+	mirror.get_transform().translate(vec3(0.0f, 30.0f, -50.0f));
 	static texture free_cam_ui = texture("textures/free_cam_ui.png");
 	texs[&mirror] = &free_cam_ui;
 	meshHierarchy[&mirror] = nullptr;
-	//mirror_pos = mirror.get_geometry().get_buffer(0);
 
 	// Make the quad for rendering to screen region
 	vector<vec3> quad_pos = { vec3(-1.0f, -1.0f, 0.0f),  vec3(1.0f, -1.0f, 0.0f),  vec3(-1.0f, 1.0f, 0.0f),  vec3(1.0f, 1.0f, 0.0f) };
@@ -536,17 +534,17 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 	//360 degrees. Shouldn't edit
 	float full_circle = two_pi<float>();
 	//sphere wave variable manipulation
-	float waves_per_circle = 6.0f;	//number of sin waves in the vertical
-	float wibble_speed = 0.5f;		//speed at which the spheres travel the sin arc
-	float amplitude = quarter_pi<float>();			//radians around z axis (pi/2 goes to poles)
-	float circling_speed = 0.4f;	//radians per second
+	float waves_per_circle = 2.0f;	//number of sin waves in the vertical
+	float wibble_speed = 1.0f;		//speed at which the spheres travel the sin arc
+	float amplitude = pi<float>() / 8.0;			//radians around z axis (pi/2 goes to poles)
+	float circling_speed = 0.9f;	//radians per second
 	//ring radius transformations
-	float waves_per_ring = 13.0f;	//number of sin waves in the horizontal 
-	float change = 0.4f;			// percentage the radius fluctuates by
+	float waves_per_ring = 3.0f;	//number of sin waves in the horizontal 
+	float change = 0.5f;			// percentage the radius fluctuates by
 	float width_disable = 1.0f;		//0 for no radial fluctuation, 1 for regular radial fluctuation
-	float shrink_factor = spheres / (12.0f + spheres);
+	float shrink_factor = spheres / (20.0f + spheres);
 	// Radius of the ring
-	vec3 radius = vec3(8.0f, 0.0f, 0.0f);
+	vec3 radius = vec3(9.0f, 0.0f, 0.0f);
 	// Variables to be used within loop
 	vec3 calculated_radius;
 	quat rotq;
