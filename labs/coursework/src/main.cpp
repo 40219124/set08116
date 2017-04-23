@@ -6,11 +6,8 @@ using namespace graphics_framework;
 using namespace glm;
 
 // Meshes
-float sphereScale = 4.0f;
+float sphereScale = 3.0f;
 map<string, mesh> sphereRing;
-map<string, mesh> sphereRing2;
-map<string, mesh> sphereRing3;
-map<string, mesh> sphereRing4;
 mesh skyBox;
 mesh ground;
 mesh hill;
@@ -95,43 +92,29 @@ void freeCamHelp(vec3 target) {
 // Move the anti-cam
 void antiCamUpdate() {
 	vec3 cam_pos, cam_target;
+	// Get camera details based on active camera
 	if (cam_state == 1) {
 		cam_pos = free_c.get_position();
 		cam_target = normalize(-(free_c.get_target() - cam_pos));
-	} else {
+	}
+	else {
 		cam_pos = target_c.get_position();
 		cam_target = normalize(-(target_c.get_target() - cam_pos));
-	} 
-	cout << cam_target.x << ", " << cam_target.y << ", " << cam_target.z << endl;
-	vec3 mirror_pos = mirror.get_transform().position;
-	vec3 mirror_norm = vec3(0.0f, 0.0f, 1.0f);//normalize(vec3(mirror.get_transform().get_transform_matrix() * vec4(0.0, 1.0, 0.0, 1.0)));
-
+	}
+	// Get mirror details
+	const static vec3 mirror_pos = mirror.get_transform().position;
+	const static vec3 mirror_norm = vec3(0.0f, 0.0f, 1.0f);
+	// The camera relative to the mirror
 	vec3 relative_pos = cam_pos - mirror_pos;
-
-	float dotted_view = dot(cam_target, mirror_norm);
+	// Dot product of mirror's normal and mirror->camera
 	float dotted_pos = dot(relative_pos, mirror_norm);
 	if (dotted_pos > 0) {
-		/*vec3 cross_view = cross(cam_target, mirror_norm);
-		float rot_view = 1;
-		if (cross_view.y < 0) {
-			rot_view *= -1;
-		}
-		rot_view *= (pi<float>() - 2.0 * acos(dotted_view));
-		vec3 new_target = -(rotate(quat(), rot_view, vec3(0.0f, 1.0f, 0.0f)) * cam_target);*/
+		// Set anti camera position to have z coordinate flipped
+		vec3 new_pos = mirror_pos + vec3(relative_pos.x, relative_pos.y, -relative_pos.z);
+		anti_cam.set_position(new_pos);
+		// Set anti camera view direction to be flipped on z axis
 		vec3 new_target = -cam_target;
 		new_target.z *= -1;
-
-		/*vec3 cross_pos = cross(relative_pos, mirror_norm);
-		float rot_pos = 1;
-		if (cross_pos.y < 0) {
-			rot_pos *= -1;
-		}
-		rot_pos *= (pi<float>() - 2.0 * acos(dotted_pos));
-		vec3 new_relative = rotate(quat(), rot_pos, vec3(0.0f, 1.0f, 0.0f)) * relative_pos;
-		vec3 new_pos = mirror_pos + new_relative;*/
-		vec3 new_pos = mirror_pos + vec3(relative_pos.x, relative_pos.y, -relative_pos.z);
-
-		anti_cam.set_position(new_pos);
 		anti_cam.set_target(new_pos + new_target);
 	}
 }
@@ -141,7 +124,6 @@ void makeSphereStructure(map<string, mesh> *sphereStructure, float sphereCount) 
 	static mesh technosphere = mesh(geometry("models/Technosphere_4.obj"));
 	static texture sphere_tex = texture("textures/sphere color.jpg");
 	static texture sphere_norm = texture("textures/sphere normals.jpg");
-	//technosphere = mesh(geometry_builder::create_sphere());
 	(*sphereStructure)["sphere0"] = technosphere;
 	(*sphereStructure)["sphere0"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	(*sphereStructure)["sphere0"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -382,30 +364,11 @@ bool load_content() {
 
 	// Make various sphere structures
 	makeSphereStructure(&sphereRing, 20.0f);
-	makeSphereStructure(&sphereRing2, 10.0f);
-	makeSphereStructure(&sphereRing3, 10.0f);
-	makeSphereStructure(&sphereRing4, 10.0f);
 
 	// Set information for the first sphere ring
 	sphereRing["sphere0"].get_transform().translate(vec3(0.0f, 1.7f, 0.0f));
 	sphereRing["sphere0"].get_transform().scale = vec3(1.0f / (20.0f * sphereScale));
 	meshHierarchy[&sphereRing["sphere0"]] = &column;
-
-	// Set information for the second sphere ring
-	sphereRing2["sphere0"].get_transform().translate(vec3(40.0f, 40.0f, 30.0f) * sphereScale * 0.25f);
-	sphereRing2["sphere0"].get_transform().rotate(rotate(quat(), half_pi<float>(), vec3(1.0f, 0.0f, 0.0f)));
-	sphereRing2["sphere0"].get_transform().scale = vec3(0.5f);
-	meshHierarchy[&sphereRing2["sphere0"]] = &sphereRing["sphere0"];
-
-	// Set information for the third sphere ring
-	sphereRing3["sphere0"].get_transform().translate(vec3(40.0f, 40.0f, -30.0f) * sphereScale * 0.25f);
-	sphereRing3["sphere0"].get_transform().scale = vec3(0.4f);
-	meshHierarchy[&sphereRing3["sphere0"]] = &sphereRing["sphere0"];
-
-	// Set information for the fourth sphere ring
-	sphereRing4["sphere0"].get_transform().translate(vec3(-40.0f, 40.0f, -30.0f) * sphereScale * 0.25f);
-	sphereRing4["sphere0"].get_transform().scale = vec3(0.3f);
-	meshHierarchy[&sphereRing4["sphere0"]] = &sphereRing["sphere0"];
 
 	// Set directional light properties
 	bool dLightOn = true;
@@ -513,7 +476,7 @@ void free_manipulation(float delta_time) {
 	free_c.rotate(delta_x, -delta_y);
 
 	//speed variable and movement vector
-	float speed = 20.0f * delta_time;
+	float speed = 25.0f * delta_time;
 	vec3 mov = vec3(0.0f);
 	//forwards
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_W)) {
@@ -565,8 +528,6 @@ void free_manipulation(float delta_time) {
 }
 //transform the spheres in a sphere map
 void transform_spheres(float delta_time, float time_total, map<string, mesh> *sphere_structure) {
-	/*delta_time = 0.0f;
-	time_total = 0.0f;*/
 	//string to mathematically aquire spheres
 	string name;
 	//the number of sphereRing -1
@@ -585,7 +546,7 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 	float width_disable = 1.0f;		//0 for no radial fluctuation, 1 for regular radial fluctuation
 	float shrink_factor = spheres / (12.0f + spheres);
 	// Radius of the ring
-	vec3 radius = vec3(5.0f, 0.0f, 0.0f);
+	vec3 radius = vec3(8.0f, 0.0f, 0.0f);
 	// Variables to be used within loop
 	vec3 calculated_radius;
 	quat rotq;
@@ -603,24 +564,13 @@ void transform_spheres(float delta_time, float time_total, map<string, mesh> *sp
 																																								//to change sphere scale based on distance from the origin
 		distFromO = calculated_radius.x;
 		sphere->get_transform().scale = vec3(shrink_factor * pi<float>() * distFromO / (spheres * sphereScale));
-
-		//--------------maths for cylindrical sphere wibbling------------------
-		/*sphereRing[name].get_transform().position = (vec3(sphereRing[name].get_transform().position.x,
-		amplitude * sin((i / spheres) * waves_per_circle * full_circle + time_total * wibble_speed),
-		sphereRing[name].get_transform().position.z));*/
-		//---------------------------------------------------------------------
 	}
-	//to move the centre sphere from side to side
-	float centre_movement = 0.0f;
-	/*(*sphere_structure)["sphere0"].get_transform().position = vec3(centre_movement * sin(time_total),
-		0.0f,
-		0.0f);*/
-
-		//rotate centre (parent) sphere
+	//rotate centre (parent) sphere
 	(*sphere_structure)["sphere0"].get_transform().rotate(eulerAngleY(delta_time * circling_speed));
 }
 //move the skybox
 void sky_follow() {
+	// Sets the skybox position to the active camera
 	switch (cam_state)
 	{
 	case(0):
@@ -651,9 +601,9 @@ bool update(float delta_time) {
 		freeCamHelp(target_c.get_target());
 	}
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_C)) {
-		cam_state = 2; //arc ball cam
+		cam_state = 2; //default to target cam
 	}
-	//which camera to control
+	// Manipulates the active camera
 	switch (cam_state)
 	{
 	case (0):
@@ -666,21 +616,10 @@ bool update(float delta_time) {
 		cam_state = 0;
 		break;
 	}
-	// Transform the spheres in the various maps
+	// Transform the spheres
 	transform_spheres(delta_time, time_total, &sphereRing);
-	transform_spheres(delta_time, time_total, &sphereRing2);
-	transform_spheres(delta_time, time_total, &sphereRing3);
-	transform_spheres(delta_time, time_total, &sphereRing4);
 
 	// To move the back wall on the x-axis
-	if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT)) {
-		ground.get_transform().translate(vec3(0.0f, delta_time * -20.0f, 0.0f));
-		cout << ground.get_transform().position.x << endl;
-	}
-	if (glfwGetKey(renderer::get_window(), GLFW_KEY_RIGHT)) {
-		ground.get_transform().translate(vec3(0.0f, delta_time * 20.0f, 0.0f));
-		cout << ground.get_transform().position.x << endl;
-	}
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_UP)) {
 		blurr *= 1.0f + 0.4f * delta_time;
 		cout << blurr << endl;
@@ -722,7 +661,7 @@ bool update(float delta_time) {
 		key_b = false;
 	}
 
-	sky_follow();
+	// Updating of cameras
 	antiCamUpdate();
 	anti_cam.update(delta_time);
 	shadow_cam.update(delta_time);
@@ -749,44 +688,19 @@ void renderCams(mat4 &V, mat4 &P, vec3 &cam_pos) {
 	case(0):
 		V = target_c.get_view();
 		P = target_c.get_projection();
-		//set camera location, eye_pos
 		cam_pos = target_c.get_position();
 		break;
 	case(1):
 		V = free_c.get_view();
 		P = free_c.get_projection();
-		//set camera location, eye_pos
 		cam_pos = free_c.get_position();
-		if (guides > 0) {
-			V = anti_cam.get_view();
-			P = anti_cam.get_projection();
-			cam_pos = anti_cam.get_position();
-		}
 		break;
 	default:
 		V = target_c.get_view();
 		P = target_c.get_projection();
-		//set camera location, eye_pos
 		cam_pos = target_c.get_position();
 		break;
 	}
-}
-// Renders a mesh
-void renderSimpleObject(mesh *obj, const mat4 &V, const mat4 &P, const mat4 &lV, const mat4 &lP) {
-	mat4 M, MVP, lMVP;
-	mat3 N;
-	transformHierarchy(obj, M, N);
-	MVP = P * (V * M);
-	lMVP = lP * (lV * M);
-	glUniformMatrix4fv(simple_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-	glUniformMatrix4fv(simple_eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
-	glUniformMatrix3fv(simple_eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(N));
-	glUniformMatrix4fv(simple_eff.get_uniform_location("lMVP"), 1, GL_FALSE, value_ptr(lMVP));
-	renderer::bind(*texs[obj], 0);
-	glUniform1i(simple_eff.get_uniform_location("tex"), 0);
-	renderer::bind(obj->get_material(), "mat");
-
-	renderer::render(*obj);
 }
 // Renders a mesh
 void renderObject(mesh *obj, const mat4 &VP, const mat4 &lVP) {
@@ -801,11 +715,13 @@ void renderObject(mesh *obj, const mat4 &VP, const mat4 &lVP) {
 	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 	glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(N));
 	glUniformMatrix4fv(eff.get_uniform_location("lMVP"), 1, GL_FALSE, value_ptr(lMVP));
+	// If the texture is the same as the last used, do not rebind
 	if (prev_tex != texs[obj]) {
 		prev_tex = texs[obj];
 		renderer::bind(*prev_tex, 0);
 		glUniform1i(eff.get_uniform_location("tex"), 0);
 	}
+	// If the normal is the same as the last used, do not rebind
 	if (norms[obj] != nullptr) {
 		renderer::bind(*norms[obj], 1);
 		glUniform1i(eff.get_uniform_location("normal_map"), 1);
@@ -824,13 +740,12 @@ void renderShadow(mesh *obj, const mat4 &lVP) {
 	renderer::render(*obj);
 }
 // Renders the shadow buffer for a mesh
-void renderShady(mesh *obj, const mat4 &lVP, const mat4 lV) {
+void renderShady(mesh *obj, const mat4 &lVP) {
 	mat4 M, MVP;
 	mat3 dc;
 	transformHierarchy(obj, M, dc);
 	MVP = lVP * M;
 	glUniformMatrix4fv(shadow_eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-	glUniformMatrix4fv(shadow_eff.get_uniform_location("MV"), 1, GL_FALSE, value_ptr(lV * M));
 	glUniform3fv(shadow_eff.get_uniform_location("eye_pos"), 1, value_ptr(shadow_cam.get_position()));
 	renderer::render(*obj);
 }
@@ -851,19 +766,11 @@ bool render() {
 	lP = shadow_cam.get_projection();
 	lVP = lP * lV;
 	for (pair<const string, mesh> &item : sphereRing) {
-		renderShady(&item.second, lVP, lV);
+		renderShady(&item.second, lVP);
 	}
-	for (pair<const string, mesh> &item : sphereRing2) {
-		renderShady(&item.second, lVP, lV);
-	}
-	for (pair<const string, mesh> &item : sphereRing3) {
-		renderShady(&item.second, lVP, lV);
-	}
-	for (pair<const string, mesh> &item : sphereRing4) {
-		renderShady(&item.second, lVP, lV);
-	}
-	renderShady(&column, lVP, lV);
-	renderShady(&terra, lVP, lV);
+	renderShady(&column, lVP);
+	renderShady(&terra, lVP);
+	renderShady(&mirror, lVP);
 
 	//glCullFace(GL_BACK);
 	shadowMap = shady.get_frame();
@@ -913,15 +820,6 @@ bool render() {
 		for (pair<const string, mesh> &item : sphereRing) {
 			renderObject(&item.second, aVP, lVP);
 		}
-		for (pair<const string, mesh> &item : sphereRing2) {
-			renderObject(&item.second, aVP, lVP);
-		}
-		for (pair<const string, mesh> &item : sphereRing3) {
-			renderObject(&item.second, aVP, lVP);
-		}
-		for (pair<const string, mesh> &item : sphereRing4) {
-			renderObject(&item.second, aVP, lVP);
-		}
 		static texture reflection_tex = reflection.get_frame();
 		texs[&mirror] = &reflection_tex;
 	}
@@ -968,15 +866,6 @@ bool render() {
 	for (pair<const string, mesh> &item : sphereRing) {
 		renderObject(&item.second, VP, lVP);
 	}
-	for (pair<const string, mesh> &item : sphereRing2) {
-		renderObject(&item.second, VP, lVP);
-	}
-	for (pair<const string, mesh> &item : sphereRing3) {
-		renderObject(&item.second, VP, lVP);
-	}
-	for (pair<const string, mesh> &item : sphereRing4) {
-		renderObject(&item.second, VP, lVP);
-	}
 	renderer::bind(mirror_eff);
 	M = mirror.get_transform().get_transform_matrix();
 	MVP = VP * M;
@@ -998,7 +887,6 @@ bool render() {
 	glUniform1i(screen_eff.get_uniform_location("neg_state"), neg_state);
 	glUniform1i(screen_eff.get_uniform_location("guides"), guides);
 	renderer::render(polaroid);
-
 
 	return true;
 }
