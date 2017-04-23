@@ -749,35 +749,37 @@ bool render() {
 	mat3 N;
 	mat4 lV, lP, lVP, lMVP;
 	vec3 cam_pos;
-
+	renderCams(V, P, cam_pos);
+	// Begin shadow rendering
 	renderer::set_render_target(shady);
 	renderer::clear();
 	renderer::bind(shadow_eff);
-
+	// Get the view and projection matrix for the shadow
 	lV = shadow_cam.get_view();
 	lP = shadow_cam.get_projection();
 	lVP = lP * lV;
+	// Render geometry
 	for (pair<const string, mesh> &item : sphereRing) {
 		renderShady(&item.second, lVP);
 	}
 	renderShady(&column, lVP);
 	renderShady(&terra, lVP);
 	renderShady(&mirror, lVP);
-
+	// Save frame to texture
 	shadowMap = shady.get_frame();
-
+	// code xl break point ------------------------------------------------------------------
  	glClearColor(0.0, 1.0, 1.0, 1.0);
-	renderCams(V, P, cam_pos);
-	// render the reflection view
+	// Render the reflection view only if camera is infront of the mirror
 	if (cam_pos.z > mirror.get_transform().position.z) {
+		// Set render target
 		renderer::set_render_target(reflection);
+		// Clear buffer
 		renderer::clear();
-
+		// Set anti cam view, projection, position
 		mat4 aV = anti_cam.get_view();
 		mat4 aP = anti_cam.get_projection();
 		vec3 acam_pos = anti_cam.get_position();
 		mat4 aVP = aP * aV;
-
 		// Render the sky box
 		glDisable(GL_DEPTH_TEST);
 		glDepthMask(GL_FALSE);
@@ -793,25 +795,24 @@ bool render() {
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
 		glDepthMask(GL_TRUE);
-
 		// Bind effect
 		renderer::bind(eff);
+		// Bind shadow details
 		renderer::bind(shadowMap, 5);
 		glUniform1i(eff.get_uniform_location("shadow_map"), 5);
-
-		//bind light
+		// Bind lights
 		renderer::bind(pLight, "point");
 		renderer::bind(dLight, "direct");
 		renderer::bind(sLight, "spot");
-		//Get camera information
+		// Bind camera information
 		glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(acam_pos));
+		// Render objects
 		renderObject(&column, aVP, lVP);
 		renderObject(&terra, aVP, lVP);
-
-		//Render the sphere meshes
 		for (pair<const string, mesh> &item : sphereRing) {
 			renderObject(&item.second, aVP, lVP);
 		}
+		// Send frame contents to a texture
 		static texture reflection_tex = reflection.get_frame();
 		texs[&mirror] = &reflection_tex;
 	}
@@ -819,9 +820,8 @@ bool render() {
 	// begin rendering scene for first proper time
 	renderer::set_render_target(snap);
 	renderer::clear();
-
+	// Calculate VP
 	VP = P * V;
-
 	// Render the sky box
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
@@ -837,26 +837,24 @@ bool render() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glDepthMask(GL_TRUE);
-
 	// Bind effect
 	renderer::bind(eff);
+	// Bind shadow details
 	renderer::bind(shadowMap, 5);
 	glUniform1i(eff.get_uniform_location("shadow_map"), 5);
-
-	//bind light
+	// Bind lights
 	renderer::bind(pLight, "point");
 	renderer::bind(dLight, "direct");
 	renderer::bind(sLight, "spot");
-	//Get camera information
+	// Bind camera information
 	glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(cam_pos));
+	// Render objects
 	renderObject(&column, VP, lVP);
 	renderObject(&terra, VP, lVP);
-	//renderObject(&ground, VP, lVP);
-
-	//Render the sphere meshes
 	for (pair<const string, mesh> &item : sphereRing) {
 		renderObject(&item.second, VP, lVP);
 	}
+	// Render mirror
 	renderer::bind(mirror_eff);
 	M = mirror.get_transform().get_transform_matrix();
 	MVP = VP * M;
@@ -865,7 +863,7 @@ bool render() {
 	glUniform1i(mirror_eff.get_uniform_location("tex"), 0);
 	renderer::render(mirror);
 
-	// render scene with post processing
+	// Render scene with post processing
 	renderer::set_render_target();
 	renderer::setClearColour(0.0f, 0.0f, 0.0f);
 	renderer::bind(screen_eff);
