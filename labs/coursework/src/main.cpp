@@ -151,7 +151,7 @@ void makeSphereStructure(map<string, mesh> *sphereStructure, float sphereCount) 
 		sphere->get_material().set_shininess(25.0f);
 		sphere->get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 		// rotates the sphere on the y-axis, and moves to circumference of ring
-		sphere->get_transform().rotate(eulerAngleY(2.0f * i * pi<float>() / sphereCount));
+		sphere->get_transform().orientation = eulerAngleY(2.0f * (float)i * pi<float>() / sphereCount);
 		sphere->get_transform().translate(vec3((*sphereStructure)[name].get_transform().get_transform_matrix() * vec4(10.0f, 0.0f, 0.0f, 1.0f)));
 		// maps a texture to the sphere's name
 		texs[sphere] = &sphere_tex;
@@ -340,7 +340,7 @@ bool load_content() {
 	// Make a "mirror"
 	mirror = mesh(geometry_builder::create_plane(1, 1));
 	mirror.get_transform().scale = vec3(30.0f, 1.0f, 50.0f);
-	mirror.get_transform().rotate(eulerAngleX(half_pi<float>()));
+	mirror.get_transform().orientation = eulerAngleX(half_pi<float>());
 	mirror.get_transform().rotate(eulerAngleY(pi<float>()));
 	mirror.get_transform().translate(vec3(0.0f, 30.0f, -50.0f));
 	static texture free_cam_ui = texture("textures/free_cam_ui.png");
